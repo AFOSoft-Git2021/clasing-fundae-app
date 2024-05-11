@@ -1,6 +1,6 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const UserProfile = require("../models/UserProfile");
+//const UserProfile = require("../models/UserProfile");
 const route = express.Router();
 
 route.get ('/', (req, res) => {
