@@ -36,7 +36,7 @@ route.post ('/login', (req, res) => {
         body.id && 
         body.firstName && body.lastName && 
         body.email && 
-        body.expirationDate && 
+        //body.expirationDate && 
         body.profileType && 
         body.languageLevel
     ) {
@@ -251,10 +251,10 @@ async function setUserProfile (body) {
     const email = body.email;
     const subscription_id = 2;
     const offer_name = body.offerName ? body.offerName : null;
-    const expiration_date = null; //body.expirationDate; //TODO: convertir EPOCH Time a TimeStamps
+    //const expiration_date = null; //body.expirationDate; //TODO: convertir EPOCH Time a TimeStamps
 
     const jsonData = {
-        expiration_date,
+        //expiration_date,
         type,
         status: 1,
         offer_name,
