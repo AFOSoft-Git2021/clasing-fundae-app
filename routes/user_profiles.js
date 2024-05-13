@@ -28,11 +28,6 @@ route.get ('/', verifyToken, (req, res) => {
         });
 });
 
-async function getAllUserProfiles () {
-    const userProfiles = await UserProfile.findAll();
-    return userProfiles;
-}
-
 route.post ('/login', (req, res) => {
 
     let body = req.body;
@@ -50,7 +45,7 @@ route.post ('/login', (req, res) => {
         userProfile
             .then(user => {          
                 
-                if (1==1 || user.length == 0) {
+                if (/*1==1 ||*/ user.length == 0) {
                     // Register the user, deploy the course and return JWT.
 
                     let userId = 0;
@@ -96,7 +91,7 @@ route.post ('/login', (req, res) => {
                                 
                                 const newCourseModule = await setRegistrationModule(module, registrationId);                                 
                                 
-                                const activitiesFundaeCourse = await getFundaeCourseModuleActivities(module.id,module.id);
+                                const activitiesFundaeCourse = await getFundaeCourseModuleActivities(module.id);
                                 if (activitiesFundaeCourse.length > 0) {
                                     promises1 = activitiesFundaeCourse.map(async activity => {
                                         const newCourseModuleActivity = await setRegistrationModuleActivity(newCourseModule.id, activity.activity_id, activity.order);
@@ -164,7 +159,7 @@ route.post ('/login', (req, res) => {
 
                         }
 
-                        mapLoop()
+                        mapLoop();
                         /*.catch(error => {
                             res.status(400).json(returnJsonError(error));
                         });*/
@@ -195,6 +190,14 @@ route.post ('/login', (req, res) => {
     }
     
 });
+
+/* / */
+async function getAllUserProfiles () {
+    const userProfiles = await UserProfile.findAll();
+    return userProfiles;
+}
+
+/* /login */
 
 async function getUserProfile (email) {
     const userProfile = await UserProfile.findAll({
