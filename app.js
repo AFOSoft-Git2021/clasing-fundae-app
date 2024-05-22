@@ -5,7 +5,10 @@ const registration = require("./routes/registrations");
 const auth = require("./routes/auth");
 const express = require("express");
 const { dbConnectMySql } = require("./config/mysql")
+const cors = require('cors')
 const app = express();
+
+app.use(cors()); 
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
