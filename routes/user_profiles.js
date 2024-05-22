@@ -171,7 +171,8 @@ route.post ('/login', (req, res) => {
 
                 } else {
                     // Return JWT.
-                    const token = jwt.sign({user_id: body.id},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+                    console.log ("user_id", user[0].id);
+                    const token = jwt.sign({user_id: user[0].id},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
                     res.status(200).json({
                         status: "ok",
                         code: 200,

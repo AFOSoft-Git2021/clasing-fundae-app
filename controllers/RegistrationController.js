@@ -176,9 +176,7 @@ const getItem = (req, res) => {
                 mapLoop(registration);
             })
             .catch(error => {
-                res.status(400).json({
-                    error: error
-                })
+                res.status(400).json("error 1")
             });
             
     } else {
@@ -190,12 +188,14 @@ const getItem = (req, res) => {
 };
 
 async function getRegistration (user_id) {
+    
     const registration = await Registration.findAll({
         attributes: ['id','from_date','to_date','name','threshold','status','exam_attempts','exam1_score','exam2_score','course_id'],
         where: {
             user_id
         }
     });
+    
     return registration;
 }
 
