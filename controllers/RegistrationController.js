@@ -87,6 +87,7 @@ const getItem = (req, res) => {
                                 promises = registrationModules.map(async module => {
                                     const registrationModule = await getRegistrationModule(module.id);
                                     let moduleObj = new Object();
+                                    moduleObj.id = registrationModule[0].id;
                                     moduleObj.name = registrationModule[0].name;
                                     moduleObj.status = registrationModule[0].status;
                                     moduleObj.threshold = registrationModule[0].threshold;

@@ -9,6 +9,9 @@ const File = sequelize.define  (
             autoIncrement: true,
             primaryKey: true
         },
+        code : {
+            type: DataTypes.STRING
+        },
         title: {
             type: DataTypes.STRING            
         }

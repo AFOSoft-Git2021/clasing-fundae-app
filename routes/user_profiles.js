@@ -32,8 +32,6 @@ route.post ('/login', (req, res) => {
 
     let body = req.body;
 
-    console.log(body)
-
     if (
         body.id && 
         body.firstName && body.lastName && 
