@@ -140,6 +140,7 @@ const getWorkSession = (req, res) => {
                                                     newActivity.result = activity.result;
                                                     newActivity.in_use = activity.in_use;
                                                     newActivity.question = activityQuestion.question;
+                                                    newActivity.explanation = activityQuestion.explanation;
                                                     newActivity.text = "";
                                                     newActivity.answers = [];
 
