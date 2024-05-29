@@ -1,94 +1,43 @@
+const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
+const Activity = require("../models/Activity");
 const ActivityQuestion = require("../models/ActivityQuestion");
 const ActivityQuestionAnswer = require("../models/ActivityQuestionAnswer");
+const fs = require('fs').promises;
 
 /*
 * @param {*} req  
 */
 
-const getWorkSession = (req, res) => {
+const getWorkSessionInfo = (req, res) => {
 
     if (req.token) {
 
-        const moduleId = req.params.module_id;
-        
-        //TODO: ReferenceError: getRegistrationModuleActivities is not defined
-        const activities = getRegistrationModuleActivities(moduleId);
-        activities    
-            .then(activities => {   
-    
-                const mapLoop = async activities => {
+        const workSessionId = req.params.id;
 
-                    console.log('Start');
+        if (workSessionId) {
 
-                    let promises;
-                    let promises1;
-                    let promises2;
-                    let promises3;
-
-                    if(activities.length > 0) {
-
-                        let activitiesArray = [];
-                        promises = activities.map(async activity => {
-                            
-                            const activityQuestions = await getActivityQuestions(activity.activity_id);
-                            if (activityQuestions.length == 1) { 
-
-                                promises1 = activityQuestions.map(async activityQuestion => {
-
-                                    const activityQuestionsAnswers = await getActivityQuestionsAnswers(activityQuestion.id);
-                                    if (activityQuestionsAnswers.length > 0) {
-                                        let newActivity = new Object();
-                                        newActivity.id = activityQuestion.activity_id;
-                                        newActivity.question = activityQuestion.question;
-
-                                        activitiesArray.push(newActivity);
-                                    } 
-
-                                    return activityQuestionsAnswers;
-
-                                });
-                            }
-                            
-                            return activityQuestions;
-                        });
-                        
-                        await Promise.all(promises)
-                        .then (async _ => {
-                            if (promises1) {
-                                await Promise.all(promises1)
-                            }
-                        })
-                        .then (async _ => {                                    
-
-                            //examObj.num_activities = registrationActivitiesNum;   
-
-                            res.status(200).json({
-                                status: "ok",
-                                code: 200,
-                                message: "Work Session recover successfully",
-                                registration: activitiesArray
-                            })
-                            
-                        })
-                          
-                    } else {
-                        res.status(400).json({
-                            error: "Registration not found"
-                        })    
-                    }
-
-                    console.log('End');
-                }
-
-                mapLoop(activities);
-                
+            const registrationModule = getRegistrationModule(workSessionId);
+            registrationModule
+            .then(registrationModule => {
+                const activities = getRegistrationModuleActivities(workSessionId);
+                return activities;
+            })
+            .then(registrationModule => {
+                const activities = getRegistrationModuleActivities(workSessionId);
+                return activities;
             })
             .catch(error => {
                 res.status(400).json({
-                    error: "File identificator not found"
+                    error: "Work Session data not found"
+                })
             })
-        });
+                        
+        } else {
+            res.status(400).json({
+                error: "Param data not found"
+            })
+        }
             
     } else {
         res.status(400).json({
@@ -96,6 +45,200 @@ const getWorkSession = (req, res) => {
         })
     }
 
+}
+
+const getWorkSession = (req, res) => {
+
+    if (req.token) {
+
+        const workSessionId = req.token.worksession_id;
+
+        if (workSessionId) {            
+            
+            //TODO: ReferenceError: getRegistrationModuleActivities is not defined
+            const activities = getRegistrationModuleActivities(workSessionId);
+            activities    
+                .then(activities => {   
+        
+                    const mapLoop = async activities => {
+
+                        console.log('Start');
+
+                        let promises;
+                        let promises1;
+                        let promises2;
+                        let promises3;
+
+                        if(activities.length > 0) {
+
+                            let activitiesArray = [];
+                            promises = activities.map(async activity => {
+
+                                const activities2 = await getActivity(activity.id);
+                                if (activities2.length == 1) {
+
+                                    promises1 = activities2.map(async activity2 => {
+
+                                        const activityQuestions = await getActivityQuestions(activity2.id);
+                                        if (activityQuestions.length == 1) { 
+
+                                            promises2 = activityQuestions.map(async activityQuestion => {
+
+                                                const activityQuestionsAnswers = await getActivityQuestionsAnswers(activityQuestion.id);
+                                                if (activityQuestionsAnswers.length > 0) {     
+
+                                                    let newActivity = new Object();
+                                                    newActivity.id = activity.id;
+                                                    newActivity.format_id = activity2.format_id;
+                                                    newActivity.course_id = activity2.course_id;
+                                                    newActivity.difficulty_level = activity2.difficulty_level;
+                                                    newActivity.order = activity.order;
+                                                    newActivity.result = activity.result;
+                                                    newActivity.in_use = activity.in_use;
+                                                    newActivity.question = activityQuestion.question;
+                                                    newActivity.text = "";
+                                                    newActivity.answers = [];
+
+                                                    activityQuestionsAnswers.forEach ( activityQuestionAnswer => {
+                                                        let newAnswer = new Object();
+                                                        newAnswer.response = activityQuestionAnswer.response;
+                                                        newAnswer.correct = activityQuestionAnswer.correct;
+                                                        newAnswer.order = activityQuestionAnswer.order;
+
+                                                        newActivity.answers.push(newAnswer);
+                                                    })
+
+                                                    if (activityQuestion.text !== null) {
+
+                                                        // read file asynchronously
+                                                        html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
+                                                                
+                                                        newActivity.text = html;
+                                                        activitiesArray.push(newActivity);
+                                                    
+                                                    } else {
+                                                        activitiesArray.push(newActivity);
+                                                    }
+                                                } 
+
+                                                return activityQuestionsAnswers;
+
+                                            });
+                                        }
+                                        
+                                        return activityQuestions;
+                                    });
+                                }
+
+                                return activities2;
+                            });
+                            
+                            await Promise.all(promises)
+                            .then (async _ => {
+                                if (promises1) {
+                                    await Promise.all(promises1)
+                                }
+                            })
+                            .then (async _ => {      
+                                if (promises2) {
+                                    await Promise.all(promises2)
+                                }
+                            })
+                            .then (async _ => {    
+
+                                activitiesArray.forEach (activity => {
+                                    
+                                    let html = activity.text.replace(/\r\n/gi,'');
+
+                                    let noBody = html.split("<body>");
+                                    if (noBody.length == 2) {
+                                        noBody = noBody[1].split("</body>");
+                                        if (noBody.length == 2) {
+                                            noBody = noBody[0].split("</h3>");
+                                            if (noBody.length == 2) {
+                                                html = noBody[1];                            
+                                            }                            
+                                        }
+                                    }
+
+                                    activity.text = html;
+                                });
+
+                                res.status(200).json({
+                                    status: "ok",
+                                    code: 200,
+                                    message: "Work Session recover successfully",
+                                    activities: activitiesArray
+                                })
+                                
+                            })
+                            
+                        } else {
+                            res.status(400).json({
+                                error: "Registration not found"
+                            })    
+                        }
+
+                        console.log('End');
+                    }
+
+                    mapLoop(activities);
+                    
+                })
+                .catch(error => {
+                    res.status(400).json({
+                        error: "File identificator not found"
+                })
+            });
+        } else {
+            res.status(400).json({
+                error: "JWT not contains WorkSession Data"
+            })
+        }
+            
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
+async function getRegistrationModule(id) {
+    const registrationModule = await RegistrationModule.findAll({
+        attributes: ['id','code','difficulty_level','course_id','format_id'],
+        where: {
+            id
+        }
+    });
+
+    return registrationModule;
+}
+
+async function getActivity(id) {
+    const activityQuestions = await Activity.findAll({
+        attributes: ['id','code','difficulty_level','course_id','format_id'],
+        where: {
+            id
+        }
+    });
+
+    return activityQuestions;
+}
+
+async function getRegistrationModuleActivities(module_id) {
+
+    const activities = await RegistrationModuleActivity.findAll({
+        attributes: ['id','result','in_use','order'],
+        where: {
+            module_id
+        },
+        order: [
+            ['order', 'ASC']
+        ]
+    });
+
+    return activities;
 }
 
 async function getActivityQuestions(activity_id) {
@@ -122,4 +265,4 @@ async function getActivityQuestionsAnswers(question_id) {
 
 }
 
-module.exports = { getWorkSession };
+module.exports = { getWorkSessionInfo, getWorkSession };
