@@ -118,7 +118,7 @@ const getWorkSession = (req, res) => {
                             let activitiesArray = [];
                             promises = activities.map(async activity => {
 
-                                const activities2 = await getActivity(activity.id);
+                                const activities2 = await getActivity(activity.activity_id);
                                 if (activities2.length == 1) {
 
                                     promises1 = activities2.map(async activity2 => {
@@ -274,13 +274,14 @@ async function getActivity(id) {
 async function getRegistrationModuleActivities(module_id) {
 
     const activities = await RegistrationModuleActivity.findAll({
-        attributes: ['id','result','in_use','order'],
+        attributes: ['id','result','in_use','order','activity_id'],
         where: {
             module_id
         },
         order: [
-            ['order', 'ASC']
-        ]
+            ['id', 'ASC']
+        ],
+        
     });
 
     return activities;
