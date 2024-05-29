@@ -4,6 +4,7 @@ const Activity = require("../models/Activity");
 const ActivityQuestion = require("../models/ActivityQuestion");
 const ActivityQuestionAnswer = require("../models/ActivityQuestionAnswer");
 const fs = require('fs').promises;
+const jwt = require("jsonwebtoken"); 
 
 /*
 * @param {*} req  
@@ -17,22 +18,46 @@ const getWorkSessionInfo = (req, res) => {
 
         if (workSessionId) {
 
+            let workSessionInfo = new Object();
+
             const registrationModule = getRegistrationModule(workSessionId);
             registrationModule
             .then(registrationModule => {
+
+                workSessionInfo.name = registrationModule[0].name;
+                workSessionInfo.threshold = registrationModule[0].threshold;
+
                 const activities = getRegistrationModuleActivities(workSessionId);
                 return activities;
             })
-            .then(registrationModule => {
-                const activities = getRegistrationModuleActivities(workSessionId);
-                return activities;
+            .then(activities => {
+
+                workSessionInfo.num_activities = activities.length;
+                let workSessionInitiated = false;
+                activities.forEach (activity => {
+                    if (activity.result > 0) {
+                        workSessionInitiated = true;
+                    }
+                }); 
+
+                workSessionInfo.status = workSessionInitiated ? 1 : 0;
+
+                const token = jwt.sign({user_id: req.token.user_id, worksession_type:0, worksession_id:workSessionId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+
+                res.status(200).json({
+                    status: "ok",
+                    code: 200,
+                    message: "Work Session Info recovered successfully",
+                    work_session_info: workSessionInfo,
+                    jwt: token
+                })
             })
             .catch(error => {
                 res.status(400).json({
-                    error: "Work Session data not found"
+                    error: "Work Session data error"
                 })
             })
-                        
+
         } else {
             res.status(400).json({
                 error: "Param data not found"
@@ -167,7 +192,7 @@ const getWorkSession = (req, res) => {
                                 res.status(200).json({
                                     status: "ok",
                                     code: 200,
-                                    message: "Work Session recover successfully",
+                                    message: "Work Session recovered successfully",
                                     activities: activitiesArray
                                 })
                                 
@@ -206,7 +231,7 @@ const getWorkSession = (req, res) => {
 
 async function getRegistrationModule(id) {
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','code','difficulty_level','course_id','format_id'],
+        attributes: ['id','name','threshold','order','status','score'],
         where: {
             id
         }
