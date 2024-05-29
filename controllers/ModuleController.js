@@ -10,6 +10,25 @@ const jwt = require("jsonwebtoken");
 * @param {*} req  
 */
 
+const getWorkSessionType = (req, res) => {
+
+    if (req.token) {
+
+        res.status(200).json({
+            status: "ok",
+            code: 200,
+            message: "Work Session Type recovered successfully",
+            worksession_type: req.token.worksession_type
+        })
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
 const getWorkSessionInfo = (req, res) => {
 
     if (req.token) {
@@ -290,4 +309,4 @@ async function getActivityQuestionsAnswers(question_id) {
 
 }
 
-module.exports = { getWorkSessionInfo, getWorkSession };
+module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession };
