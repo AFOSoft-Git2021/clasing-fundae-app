@@ -14,19 +14,42 @@ const getWorkSessionType = (req, res) => {
 
     if (req.token) {
 
-        res.status(200).json({
-            status: "ok",
-            code: 200,
-            message: "Work Session Type recovered successfully",
-            worksession_type: req.token.worksession_type
-        })
+        const workSessionId = req.token.worksession_id;
+        const workSessionType = req.token.worksession_type;
+        if (workSessionType == 0) {
+
+            const registrationModule = getRegistrationModule(workSessionId);
+            registrationModule
+            .then(registrationModule => {
+
+                res.status(200).json({
+                    status: "ok",
+                    code: 200,
+                    message: "Work Session Type recovered successfully",
+                    worksession_type: workSessionType,
+                    module_name: registrationModule.name
+                })
+            })
+            .catch (error => {
+                res.status(400).json({
+                    error: error
+                })
+            })
+        } else {
+            res.status(200).json({
+                status: "ok",
+                code: 200,
+                message: "Work Session Type recovered successfully",
+                worksession_type: worksessionType,
+                module_name: ""
+            })
+        }
 
     } else {
         res.status(400).json({
             error: "JWT must be provided"
         })
     }
-
 }
 
 const getWorkSessionInfo = (req, res) => {
