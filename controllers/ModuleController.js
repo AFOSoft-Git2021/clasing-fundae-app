@@ -27,7 +27,7 @@ const getWorkSessionType = (req, res) => {
                     code: 200,
                     message: "Work Session Type recovered successfully",
                     worksession_type: workSessionType,
-                    module_name: registrationModule.name
+                    module_name: registrationModule[0].name
                 })
             })
             .catch (error => {
