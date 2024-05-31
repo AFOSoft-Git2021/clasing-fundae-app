@@ -122,10 +122,123 @@ const getWorkSession = (req, res) => {
 
         if (workSessionId) {            
             
-            //TODO: ReferenceError: getRegistrationModuleActivities is not defined
+            let numActivities = 0;
+            const moduleActivities = getRegistrationModuleActivities(workSessionId);
+            moduleActivities    
+                .then(async moduleActivities => {   
+
+                    console.log("START");
+
+                    let activitiesArray = [];
+
+                    for (const moduleActivity of moduleActivities) {
+                        
+                        const activities = await getActivity(moduleActivity.activity_id);
+                        
+                        if (activities.length == 1) {     
+                            
+                            for (const activity of activities) {
+                            
+                                const activityQuestions = await getActivityQuestions(activity.id);
+
+                                if (activityQuestions.length == 1) { 
+                                    
+                                    for (const activityQuestion of activityQuestions) {
+                            
+                                        const activityQuestionAnswers = await getActivityQuestionsAnswers(activityQuestion.id);
+                                        if (activityQuestionAnswers.length > 0) { 
+
+                                            //TODO: Copiar el método de calcular skill y viewMode de CLGo
+                                            // De momento, aleatorio
+                                            const skillId = Math.floor(Math.random() * 4) + 1;
+                                            const viewMode = (skillId == 3) ? Math.floor(Math.random() * 2) + 1 : 0; 
+
+                                            let newActivity = new Object();
+                                            newActivity.id = activity.id;
+                                            newActivity.format_id = activity.format_id;
+                                            newActivity.course_id = activity.course_id;
+                                            newActivity.skill_id = skillId,
+                                            newActivity.view_mode = viewMode, 
+                                            newActivity.difficulty_level = activity.difficulty_level;
+                                            newActivity.order = moduleActivity.order;
+                                            newActivity.result = moduleActivity.result;
+                                            newActivity.in_use = moduleActivity.in_use;
+                                            newActivity.question = activityQuestion.question;
+                                            newActivity.explanation = activityQuestion.explanation ? activityQuestion.explanation : "";
+                                            newActivity.text = "";
+                                            newActivity.answers = [];
+
+                                            activityQuestionAnswers.forEach ( activityQuestionAnswer => {
+                                                let newAnswer = new Object();
+                                                newAnswer.response = activityQuestionAnswer.response;
+                                                newAnswer.correct = activityQuestionAnswer.correct;
+                                                newAnswer.order = activityQuestionAnswer.order;
+
+                                                newActivity.answers.push(newAnswer);
+                                            })
+
+                                            if (activityQuestion.text !== null) {
+
+                                                // read file asynchronously
+                                                html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
+                                                        
+                                                newActivity.text = html;
+                                                activitiesArray.push(newActivity);
+                                            
+                                            } else {
+                                                activitiesArray.push(newActivity);
+                                            }
+                                            
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    console.log("END");
+
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: "Work Session recovered successfully",
+                        
+                        activities: activitiesArray
+                    })
+                })
+                .catch(error => {
+                    res.status(400).json({
+                        error: error
+                })
+            });
+        } else {
+            res.status(400).json({
+                error: "JWT not contains WorkSession Data"
+            })
+        }
+            
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
+const getWorkSession_BAK = (req, res) => {
+
+    if (req.token) {
+
+        const workSessionId = req.token.worksession_id;
+
+        if (workSessionId) {            
+            
+            let numActivities = 0;
             const activities = getRegistrationModuleActivities(workSessionId);
             activities    
                 .then(activities => {   
+
+                    numActivities = activities.length;
         
                     const mapLoop = async activities => {
 
@@ -208,18 +321,29 @@ const getWorkSession = (req, res) => {
                                 return activities2;
                             });
                             
-                            await Promise.all(promises)
+                            for await (const e of promises) { 
+                                await e
+                                console.log (e)
+                                for await (const e1 of promises1) {
+                                    await e1
+                                    for await (const e2 of promises2) await e2
+                                }
+                            }
+                             
+                            
+
+                            await Promise.all(promises)                            
                             .then (async _ => {
                                 if (promises1) {
-                                    await Promise.all(promises1)
+                                    await Promise.all(promises1)                                         
                                 }
                             })
                             .then (async _ => {      
                                 if (promises2) {
-                                    await Promise.all(promises2)
+                                    await Promise.all(promises2)                                    
                                 }
                             })
-                            .then (async _ => {    
+                            .then (async _ => {   
 
                                 activitiesArray.forEach (activity => {
                                     
@@ -243,6 +367,7 @@ const getWorkSession = (req, res) => {
                                     status: "ok",
                                     code: 200,
                                     message: "Work Session recovered successfully",
+                                    num_activities: numActivities,
                                     activities: activitiesArray
                                 })
                                 
