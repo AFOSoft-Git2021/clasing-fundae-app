@@ -154,10 +154,17 @@ const getWorkSession = (req, res) => {
                                                 const activityQuestionsAnswers = await getActivityQuestionsAnswers(activityQuestion.id);
                                                 if (activityQuestionsAnswers.length > 0) {     
 
+                                                    //TODO: Copiar el método de calcular skill y viewMode de CLGo
+                                                    // De momento, aleatorio
+                                                    const skillId = Math.floor(Math.random() * 4) + 1;
+                                                    const viewMode = (skillId == 3) ? Math.floor(Math.random() * 2) + 1 : 0; 
+
                                                     let newActivity = new Object();
                                                     newActivity.id = activity.id;
                                                     newActivity.format_id = activity2.format_id;
                                                     newActivity.course_id = activity2.course_id;
+                                                    newActivity.skill_id = skillId,
+                                                    newActivity.view_mode = viewMode, 
                                                     newActivity.difficulty_level = activity2.difficulty_level;
                                                     newActivity.order = activity.order;
                                                     newActivity.result = activity.result;
