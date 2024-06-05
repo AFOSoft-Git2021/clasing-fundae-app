@@ -1,6 +1,7 @@
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
 const Activity = require("../models/Activity");
+const ActivityFormat = require("../models/ActivityFormat");
 const ActivityQuestion = require("../models/ActivityQuestion");
 const ActivityQuestionAnswer = require("../models/ActivityQuestionAnswer");
 const fs = require('fs').promises;
@@ -148,47 +149,134 @@ const getWorkSession = (req, res) => {
                                         const activityQuestionAnswers = await getActivityQuestionsAnswers(activityQuestion.id);
                                         if (activityQuestionAnswers.length > 0) { 
 
-                                            //TODO: Copiar el método de calcular skill y viewMode de CLGo
-                                            // De momento, aleatorio
-                                            const skillId = Math.floor(Math.random() * 4) + 1;
-                                            const viewMode = (skillId == 3) ? Math.floor(Math.random() * 2) + 1 : 0; 
+                                            // Buscamos el description del formato de la actividad
+                                            const activityFormats = await getActivityFormat(activity.format_id);
+                                            if (activityFormats.length == 1) {
 
-                                            let newActivity = new Object();
-                                            newActivity.id = activity.id;
-                                            newActivity.format_id = activity.format_id;
-                                            newActivity.course_id = activity.course_id;
-                                            newActivity.skill_id = skillId,
-                                            newActivity.view_mode = viewMode, 
-                                            newActivity.difficulty_level = activity.difficulty_level;
-                                            newActivity.order = moduleActivity.order;
-                                            newActivity.result = moduleActivity.result;
-                                            newActivity.in_use = moduleActivity.in_use;
-                                            newActivity.question = activityQuestion.question;
-                                            newActivity.explanation = activityQuestion.explanation ? activityQuestion.explanation : "";
-                                            newActivity.text = "";
-                                            newActivity.answers = [];
+                                                //TODO: Copiar el método de calcular skill y viewMode de CLGo
+                                                // De momento, aleatorio
+                                                //const skillId = Math.floor(Math.random() * 4) + 1;
+                                                //const viewMode = (skillId == 3) ? Math.floor(Math.random() * 2) + 1 : 0; 
 
-                                            activityQuestionAnswers.forEach ( activityQuestionAnswer => {
-                                                let newAnswer = new Object();
-                                                newAnswer.response = activityQuestionAnswer.response;
-                                                newAnswer.correct = activityQuestionAnswer.correct;
-                                                newAnswer.order = activityQuestionAnswer.order;
+                                                let acronymunFormat = "";
+                                                switch(activity.format_id) {
 
-                                                newActivity.answers.push(newAnswer);
-                                            })
+                                                    case 1:
+                                                        acronymunFormat = "GR";
+                                                        break;
+                                                    case 2:
+                                                        acronymunFormat = "TS";
+                                                        break;
+                                                    case 3:
+                                                        acronymunFormat = "FG";
+                                                        break;
+                                                    case 4:
+                                                        acronymunFormat = "TT";
+                                                        break;
+                                                    case 5:
+                                                        acronymunFormat = "TSC";
+                                                        break;
+                                                    case 6:
+                                                        acronymunFormat = "T1W";
+                                                        break;
+                                                    case 7:
+                                                        acronymunFormat = "RR";
+                                                        break;
+                                                }
 
-                                            if (activityQuestion.text !== null) {
+                                                let acronymunCourse = "";
+                                                switch(activity.course_id) {
 
-                                                // read file asynchronously
-                                                html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
-                                                        
-                                                newActivity.text = html;
-                                                activitiesArray.push(newActivity);
-                                            
-                                            } else {
-                                                activitiesArray.push(newActivity);
+                                                    case 1:
+                                                        acronymunCourse = "A1";
+                                                        break;
+                                                    case 2:
+                                                        acronymunCourse = "A2";
+                                                        break;
+                                                    case 3:
+                                                        acronymunCourse = "B1";
+                                                        break;
+                                                    case 4:
+                                                        acronymunCourse = "B2";
+                                                        break;
+                                                    case 5:
+                                                        acronymunCourse = "C1";
+                                                        break;
+                                                    case 6:
+                                                        acronymunCourse = "C2";
+                                                        break;
+                                                }
+
+                                                let questionAudio = "";
+                                                if (activityQuestion.question_audio !== null && activityQuestion.question_audio.trim() == "1") {
+                                                    questionAudio = "audios/" + acronymunCourse + "/" + acronymunFormat + "/" + activity.code.trim().toUpperCase() + "-q.mp3";
+                                                } else {
+
+                                                    let audioName = "";
+
+                                                    if (activityQuestion.question_audio !== null && activityQuestion.question_audio.trim() != "") {
+                                                        if (acronymunFormat != "T1W") {
+                                                            audioName = "audios/" + acronymunCourse + "/" + acronymunFormat + "/" + activityQuestion.question_audio.trim();
+                                                        } else {
+                                                            audioName = "audios/A1/TT/" + activityQuestion.question_audio.trim(); 
+                                                        }
+
+                                                        questionAudio = audioName;
+                                                    }
+                                                }
+
+                                                const arraySkillViewMode = setActivitySkillAndViewMode(activity.format_id, activityQuestion.question_audio, activityQuestion.answers_audio);
+
+                                                let newActivity = new Object();
+                                                newActivity.id = activity.id;
+                                                newActivity.description = activityFormats[0].description;
+                                                newActivity.format_id = activity.format_id;
+                                                newActivity.course_id = activity.course_id;
+                                                //newActivity.skill_id = skillId,
+                                                //newActivity.view_mode = viewMode, 
+                                                newActivity.skill_id = (arraySkillViewMode.length == 2) ? arraySkillViewMode[0] : 1,
+                                                newActivity.view_mode = (arraySkillViewMode.length == 2) ? arraySkillViewMode[1] : 0,
+                                                newActivity.difficulty_level = activity.difficulty_level;
+                                                newActivity.order = moduleActivity.order;
+                                                newActivity.result = moduleActivity.result;
+                                                newActivity.in_use = moduleActivity.in_use;
+                                                newActivity.question = activityQuestion.question;
+                                                newActivity.question_audio = questionAudio;
+                                                newActivity.explanation = activityQuestion.explanation ? activityQuestion.explanation : "";
+                                                newActivity.text = "";
+                                                newActivity.answers = [];
+
+                                                //console.log("question_audio", questionAudio)
+
+                                                activityQuestionAnswers.forEach ( activityQuestionAnswer => {
+
+                                                    let answersAudio = "";
+                                                    
+                                                    if (activityQuestion.answers_audio !== null && activityQuestion.answers_audio.trim() != "0") {
+                                                        answersAudio = "audios/" + acronymunCourse + "/" + acronymunFormat + "/" + activity.code.trim().toUpperCase() + '-r' + activityQuestionAnswer.order + ".mp3";
+                                                    }
+
+                                                    let newAnswer = new Object();
+                                                    newAnswer.response = activityQuestionAnswer.response;
+                                                    newAnswer.correct = activityQuestionAnswer.correct;
+                                                    newAnswer.order = activityQuestionAnswer.order;
+                                                    newAnswer.answer_audio = answersAudio;
+
+                                                    newActivity.answers.push(newAnswer);
+                                                })
+
+                                                if (activityQuestion.text !== null) {
+
+                                                    // read file asynchronously
+                                                    html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
+                                                            
+                                                    newActivity.text = html;
+                                                    activitiesArray.push(newActivity);
+                                                
+                                                } else {
+                                                    activitiesArray.push(newActivity);
+                                                }
                                             }
-                                            
                                         }
                                     }
                                 }
@@ -426,6 +514,19 @@ async function getActivity(id) {
     return activityQuestions;
 }
 
+async function getActivityFormat(id) {
+
+    const activityFormats = await ActivityFormat.findAll({
+        attributes: ['id','name','description','prefix'],
+        where: {
+            id
+        }
+    });
+
+    return activityFormats;
+
+}
+
 async function getRegistrationModuleActivities(module_id) {
 
     const activities = await RegistrationModuleActivity.findAll({
@@ -434,7 +535,7 @@ async function getRegistrationModuleActivities(module_id) {
             module_id
         },
         order: [
-            ['id', 'ASC']
+            ['order', 'ASC']
         ],
         
     });
@@ -464,6 +565,59 @@ async function getActivityQuestionsAnswers(question_id) {
 
     return activityQuestionsAnswers;
 
+}
+
+function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
+
+    const setSkillNoListening = formatId => {
+
+        let skillId = 0;
+
+        switch (parseInt(formatId)) {
+            case 1:
+            case 2:
+                skillId = 4;
+                break;
+            case 3:
+            case 5:
+                skillId = 1;
+                break;
+            case 4:
+            case 6:
+            case 7:
+                skillId = 2;
+                break;
+        }
+
+        return skillId;
+    }
+
+    let viewMode = 0;
+    let skillId = 0;
+
+    if (questionAudio != "0" && answersAudio != "0") {
+
+        const useListening = Math.floor(Math.random() * 1000) + 1;
+        if (useListening >= 650) {
+
+            skillId = 3;
+
+            const audioExists = Math.floor(Math.random() * 10) + 1;
+            if (audioExists <= 5) {
+                viewMode = 1;
+            } else {
+                viewMode = 2;
+            }
+
+        } else {
+            skillId = setSkillNoListening(formatId);
+        }
+
+    } else {
+        skillId = setSkillNoListening(formatId);
+    }
+
+    return [skillId,viewMode];
 }
 
 module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession };

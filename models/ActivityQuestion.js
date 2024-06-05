@@ -34,7 +34,7 @@ const ActivityQuestion = sequelize.define  (
             type: DataTypes.STRING,
             defaultValue: '0'
         },
-        answers_image : {
+        answers_audio : {
             type: DataTypes.STRING,
             defaultValue: '0'
         }
