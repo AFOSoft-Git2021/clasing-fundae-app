@@ -4,6 +4,7 @@ const Activity = require("../models/Activity");
 const ActivityFormat = require("../models/ActivityFormat");
 const ActivityQuestion = require("../models/ActivityQuestion");
 const ActivityQuestionAnswer = require("../models/ActivityQuestionAnswer");
+const Skill = require("../models/Skill");
 const fs = require('fs').promises;
 const jwt = require("jsonwebtoken"); 
 
@@ -229,7 +230,9 @@ const getWorkSession = (req, res) => {
 
                                                 let newActivity = new Object();
                                                 newActivity.id = activity.id;
+                                                newActivity.id = moduleActivity.id;
                                                 newActivity.description = activityFormats[0].description;
+                                                newActivity.activity_id = activity.id;
                                                 newActivity.format_id = activity.format_id;
                                                 newActivity.course_id = activity.course_id;
                                                 //newActivity.skill_id = skillId,
@@ -497,15 +500,31 @@ const setWorkSessionActivityResponse = (req, res) => {
     if (req.token) {
 
         if (
-            body.id && 
-            body.response
+            req.body.id && 
+            req.body.result && 
+            req.body.skill_id
         ) {
-
-            const workSessionId = req.token.worksession_id;
             
+            //const moduleId = req.token.worksession_id;
+            const id = req.body.id;
+            const result = req.body.result;
+            const skillId = req.body.skill_id;
+
+            const activityResponse = setActivityResponse(id, result, skillId);
+            activityResponse
+            .then (_ => {
+                res.status(200).json({
+                    status: "ok",
+                    code: 200,
+                    message: "Activity result saved successfully"
+                })
+            })
+            .catch (error => {
+                res.status(400).json({"error":"Error saving activity result"});
+            })
 
         } else {
-            res.status(400).json(returnJsonError("Necessary data is missing"));
+            res.status(400).json({"error":"Necessary data is missing"});
         }
 
     } else {
@@ -513,7 +532,105 @@ const setWorkSessionActivityResponse = (req, res) => {
             error: "JWT must be provided"
         })
     }
+}
 
+const getWorkSessionStatistics = (req, res) => {
+
+    if (req.token) {
+
+        if (req.token.worksession_id) {
+
+            const workSessionId = req.token.worksession_id;
+
+            const registrationModule = getRegistrationModule(workSessionId);
+            registrationModule
+            .then (registrationModule => {
+            
+                const skills = getSkills();
+                skills
+                .then (skills => {
+
+                    let skillsArray = [];
+                    skills.forEach(skill => {
+                        let skillObject = new Object();
+                        skillObject.id = skill.id;
+                        skillObject.name = skill.name;
+                        skillObject.numberCorrectActivities = 0;
+                        skillObject.numberIncorrectActivities = 0;
+                        skillObject.percentage = 0;
+                        skillsArray.push(skillObject);
+                    });
+
+                    const activities = getRegistrationModuleActivities(workSessionId);
+                    activities
+                    .then (activities => {
+
+                        let activitiesCorrectNumber = 0;
+                        let activitiesIncorrectNumber = 0;
+
+                        activities.forEach (activity => {
+                            for (let skill of skillsArray) {
+                                if (skill.id == activity.skill_id) {
+                                    if (activity.result == 1) {
+                                        skill.numberCorrectActivities++;
+                                        activitiesCorrectNumber++;
+                                    } else {
+                                        if (activity.result == 2) {
+                                            skill.numberIncorrectActivities++;
+                                            activitiesIncorrectNumber++;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        });
+
+                        const workSessionNumActivities = activitiesCorrectNumber + activitiesIncorrectNumber;
+                        const threshold = registrationModule[0].threshold;
+                        const moduleName = registrationModule[0].name;
+
+                        for (let skill of skillsArray) {
+                            skill.percentage = ((skill.numberCorrectActivities + skill.numberIncorrectActivities) > 0) ? (100 * skill.numberCorrectActivities) / (skill.numberCorrectActivities + skill.numberIncorrectActivities) : 0;
+
+                            skill.percentage = Math.trunc(skill.percentage*100)/100;
+                        }
+
+                        const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
+                        
+                        res.status(200).json({
+                            status: "ok",
+                            code: 200,
+                            message: "Work Session statistic generated sucessfully",
+                            statistics: {
+                                "module_name": moduleName,
+                                "passed": passedWorkSession,
+                                "correct_activities": activitiesCorrectNumber,
+                                "incorrect_activities": activitiesIncorrectNumber, 
+                                "skills": skillsArray
+                            }
+                        })
+                    })
+                    .catch (error => {
+                        res.status(400).json({"error":"Error recovering work session activities"});
+                    })
+                })
+                .catch (error => {
+                    res.status(400).json({"error":"Error recovering list of skills"});
+                })
+            })
+            .catch (error => {
+                res.status(400).json({"error":"Error recovering Module Registration data"});
+            })
+
+        } else {
+            res.status(400).json({"error":"Module Registration Id not found"});
+        }
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
 }
 
 async function getRegistrationModule(id) {
@@ -554,7 +671,7 @@ async function getActivityFormat(id) {
 async function getRegistrationModuleActivities(module_id) {
 
     const activities = await RegistrationModuleActivity.findAll({
-        attributes: ['id','result','in_use','order','activity_id'],
+        attributes: ['id','result','in_use','order','skill_id','activity_id'],
         where: {
             module_id
         },
@@ -591,17 +708,38 @@ async function getActivityQuestionsAnswers(question_id) {
 
 }
 
-async function setActivityResponse(result, activity_id, module_id) {
+async function setActivityResponse(id, result, skill_id) {
     const jsonData = {        
         result,
         in_use: 1,
-        activity_id,
-        module_id
+        skill_id
     };
 
-    const registrationExamActivity = await RegistrationExamActivity.create(jsonData);
-    return registrationExamActivity;
+    const jsonWhere = {        
+        id
+    };
+
+    const ativityResponse = await RegistrationModuleActivity.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return ativityResponse;
 };
+
+async function getSkills() {
+
+    const skills = await Skill.findAll({
+        attributes: ['id','name','abbreviation'],
+        order: [
+            ['id', 'ASC']
+        ]
+    });
+
+    return skills;
+
+}
 
 function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
 
@@ -656,4 +794,4 @@ function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
     return [skillId,viewMode];
 }
 
-module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse };
+module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics };

@@ -20,7 +20,11 @@ const RegistrationModuleActivity = sequelize.define  (
         order: {
             type: DataTypes.SMALLINT,
             defaultValue: 0
-        },        
+        },   
+        skill_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },     
         activity_id: {
             type: DataTypes.INTEGER,
             allowNull: false
