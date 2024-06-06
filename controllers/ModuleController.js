@@ -41,7 +41,7 @@ const getWorkSessionType = (req, res) => {
                 status: "ok",
                 code: 200,
                 message: "Work Session Type recovered successfully",
-                worksession_type: worksessionType,
+                worksession_type: workSessionType,
                 module_name: ""
             })
         }
@@ -492,6 +492,30 @@ const getWorkSession_BAK = (req, res) => {
 
 }
 
+const setWorkSessionActivityResponse = (req, res) => {
+
+    if (req.token) {
+
+        if (
+            body.id && 
+            body.response
+        ) {
+
+            const workSessionId = req.token.worksession_id;
+            
+
+        } else {
+            res.status(400).json(returnJsonError("Necessary data is missing"));
+        }
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
 async function getRegistrationModule(id) {
     const registrationModule = await RegistrationModule.findAll({
         attributes: ['id','name','threshold','order','status','score'],
@@ -567,6 +591,18 @@ async function getActivityQuestionsAnswers(question_id) {
 
 }
 
+async function setActivityResponse(result, activity_id, module_id) {
+    const jsonData = {        
+        result,
+        in_use: 1,
+        activity_id,
+        module_id
+    };
+
+    const registrationExamActivity = await RegistrationExamActivity.create(jsonData);
+    return registrationExamActivity;
+};
+
 function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
 
     const setSkillNoListening = formatId => {
@@ -620,4 +656,4 @@ function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
     return [skillId,viewMode];
 }
 
-module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession };
+module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse };
