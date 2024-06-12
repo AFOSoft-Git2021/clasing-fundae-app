@@ -1,4 +1,5 @@
 const Registration = require("../models/Registration");
+const FundaeTeacher = require("../models/FundaeTeacher");
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
 const RegistrationModuleFile = require("../models/RegistrationModuleFile");
@@ -68,103 +69,127 @@ const getItem = (req, res) => {
 
                         }
 
-                        let registrationActivitiesNum = 0;
-                        let examObj = new Object();                        
-                        examObj.threshold = userRegistration.threshold;
-                        examObj.attempts = userRegistration.exam_attempts;
-                        examObj.exam1_score = userRegistration.exam1_score;
-                        examObj.exam2_score = userRegistration.exam2_score;
+                        const teacher = await getRegistrationTeacher(userRegistration.teacher_id);
+                        if (teacher.length == 1) {
 
-                        const course = await getRegistrationCourse(userRegistration.course_id);
-                        if (registration.length > 0) {
+                            const registrationTeacher = teacher[0];
 
-                            const registrationCourse = course[0];
+                            let registrationActivitiesNum = 0;
 
-                            const registrationModules = await getRegistrationModules(userRegistration.id);
-                            if (registrationModules.length > 0) {
+                            let teacherObj = new Object(); 
+                            teacherObj.id = registrationTeacher.id;
+                            teacherObj.avatar = registrationTeacher.avatar;
+                            teacherObj.name = registrationTeacher.name;
+                            teacherObj.availability = registrationTeacher.availability;
+                            teacherObj.response_time = registrationTeacher.response_time;
+                            teacherObj.messages_number = registrationTeacher.messages_number;
 
-                                let modulesArray = [];
-                                promises = registrationModules.map(async module => {
-                                    const registrationModule = await getRegistrationModule(module.id);
-                                    let moduleObj = new Object();
-                                    moduleObj.id = registrationModule[0].id;
-                                    moduleObj.name = registrationModule[0].name;
-                                    moduleObj.status = registrationModule[0].status;
-                                    moduleObj.threshold = registrationModule[0].threshold;
-                                    moduleObj.score = registrationModule[0].score;
+                            let examObj = new Object();                        
+                            examObj.threshold = userRegistration.threshold;
+                            examObj.attempts = userRegistration.exam_attempts;
+                            examObj.exam1_score = userRegistration.exam1_score;
+                            examObj.exam2_score = userRegistration.exam2_score;
+
+                            const course = await getRegistrationCourse(userRegistration.course_id);
+                            if (course.length > 0) {
+
+                                const registrationCourse = course[0];
+
+                                const registrationModules = await getRegistrationModules(userRegistration.id);
+                                if (registrationModules.length > 0) {
+
+                                    let modulesArray = [];
+                                    promises = registrationModules.map(async module => {
+                                        const registrationModule = await getRegistrationModule(module.id);
+                                        let moduleObj = new Object();
+                                        moduleObj.id = registrationModule[0].id;
+                                        moduleObj.name = registrationModule[0].name;
+                                        moduleObj.order = registrationModule[0].order;
+                                        moduleObj.status = registrationModule[0].status;
+                                        moduleObj.threshold = registrationModule[0].threshold;
+                                        moduleObj.score = registrationModule[0].score;
+                                        
+                                        const registrationModuleActivities = await getRegistrationModuleActivities(registrationModule[0].id);
+                                        moduleObj.num_activities = registrationModuleActivities.length;
+                                        registrationActivitiesNum += registrationModuleActivities.length;
+
+                                        const registrationModuleFiles = await getRegistrationModuleFiles(registrationModule[0].id);
+                                        if (registrationModuleFiles.length > 0) {                                        
+                                            let pillsArray = [];
+                                            moduleObj.pills = pillsArray;
+                                            promises1 = registrationModuleFiles.map(async file => {
+                                                
+                                                let pillObj = new Object();
+                                                pillObj.id = file.id;
+                                                pillObj.name = file.name;
+                                                pillObj.viewed = file.viewed;
+
+                                                pillsArray.push(pillObj);
+
+                                                return registrationModuleFiles;
+                                            })
+                                        } else {
+                                            let pillsArray = [];
+                                            moduleObj.pills = pillsArray;
+                                        }
+                                        
+                                        modulesArray.push(moduleObj);
+
+                                        return registrationModule;
+                                    });
                                     
-                                    const registrationModuleActivities = await getRegistrationModuleActivities(registrationModule[0].id);
-                                    moduleObj.num_activities = registrationModuleActivities.length;
-                                    registrationActivitiesNum += registrationModuleActivities.length;
-
-                                    const registrationModuleFiles = await getRegistrationModuleFiles(registrationModule[0].id);
-                                    if (registrationModuleFiles.length > 0) {                                        
-                                        let pillsArray = [];
-                                        moduleObj.pills = pillsArray;
-                                        promises1 = registrationModuleFiles.map(async file => {
-                                            
-                                            let pillObj = new Object();
-                                            pillObj.id = file.id;
-                                            pillObj.name = file.name;
-                                            pillObj.viewed = file.viewed;
-
-                                            pillsArray.push(pillObj);
-
-                                            return registrationModuleFiles;
-                                        })
-                                    } else {
-                                        let pillsArray = [];
-                                        moduleObj.pills = pillsArray;
-                                    }
-                                    
-                                    modulesArray.push(moduleObj);
-
-                                    return registrationModule;
-                                });
-                                
-                                await Promise.all(promises)
-                                .then (async _ => {
-                                    if (promises1) {
-                                        await Promise.all(promises1)
-                                    }
-                                })
-                                .then (async _ => {                                    
-
-                                    examObj.num_activities = registrationActivitiesNum; 
-                                    
-                                    let registrationJSON = {
-                                        "course_data": {
-                                            "name": `${userRegistration.name}`,
-                                            "from_date": `${userRegistration.from_date}`,
-                                            "to_date": `${userRegistration.to_date}`,
-                                            "level": registrationCourse.course_code,
-                                            "status": registrationStatus(userRegistration.status),                                       
-                                        },
-                                        "modules_data": modulesArray,
-                                        "exam_data": examObj
-                                    }
-    
-                                    res.status(200).json({
-                                        status: "ok",
-                                        code: 200,
-                                        message: "Registration found: " + userRegistration.id,
-                                        registration: registrationJSON
+                                    await Promise.all(promises)
+                                    .then (async _ => {
+                                        if (promises1) {
+                                            await Promise.all(promises1)
+                                        }
                                     })
-                                    
-                                })
+                                    .then (async _ => {               
+                                        
+                                        //Ordenamos el array de módulos por el dato "order"
+                                        modulesArray.sort((a, b) => parseInt(a.order) - parseInt(b.order));
 
-                                
+                                        examObj.num_activities = registrationActivitiesNum; 
+                                        
+                                        let registrationJSON = {
+                                            "course_data": {
+                                                "name": `${userRegistration.name}`,
+                                                "from_date": `${userRegistration.from_date}`,
+                                                "to_date": `${userRegistration.to_date}`,
+                                                "level": registrationCourse.course_code,
+                                                "status": registrationStatus(userRegistration.status),                                       
+                                            },
+                                            "teacher_data": teacherObj,
+                                            "modules_data": modulesArray,
+                                            "exam_data": examObj
+                                        }
+        
+                                        res.status(200).json({
+                                            status: "ok",
+                                            code: 200,
+                                            message: "Registration found: " + userRegistration.id,
+                                            registration: registrationJSON
+                                        })
+                                        
+                                    })
+
+                                    
+                                } else {
+                                    res.status(400).json({
+                                        error: "Registration Modules not found"
+                                    })    
+                                }
+
                             } else {
                                 res.status(400).json({
-                                    error: "Registration Modules not found"
+                                    error: "Registration Course not found"
                                 })    
-                            }
-
+                            }  
                         } else {
                             res.status(400).json({
-                                error: "Registration Course not found"
+                                error: "Course's teacher not found"
                             })    
-                        }   
+                        }  
                     } else {
                         res.status(400).json({
                             error: "Registration not found"
@@ -191,13 +216,26 @@ const getItem = (req, res) => {
 async function getRegistration (user_id) {
     
     const registration = await Registration.findAll({
-        attributes: ['id','from_date','to_date','name','threshold','status','exam_attempts','exam1_score','exam2_score','course_id'],
+        attributes: ['id','from_date','to_date','name','threshold','status','exam_attempts','exam1_score','exam2_score','course_id','teacher_id'],
         where: {
             user_id
         }
     });
     
     return registration;
+}
+
+async function getRegistrationTeacher(id) {
+
+    const registration = await FundaeTeacher.findAll({
+        attributes: ['id','name','title','availability','response_time','description','avatar','language','skills','messages_number'],
+        where: {
+            id
+        }
+    });
+    
+    return registration;
+
 }
 
 async function getRegistrationCourse (id) {
