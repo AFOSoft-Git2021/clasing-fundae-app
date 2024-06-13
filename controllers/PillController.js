@@ -1,6 +1,8 @@
 const Registration = require("../models/Registration");
 const File = require("../models/File");
 const fs = require("fs");
+const RegistrationModule = require("../models/RegistrationModule");
+const RegistrationModuleFile = require("../models/RegistrationModuleFile");
 
 /*
 * @param {*} req  
@@ -60,6 +62,88 @@ const getItem = (req, res) => {
 
 };
 
+const setPillViewed = (req, res) => {
+
+    if (req.token) {
+
+        let body = req.body;
+
+        if (
+            body.module_id && 
+            body.pill_id
+        ) {
+
+            const moduleId = body.module_id;
+            const pillId = body.pill_id;
+
+            const pills = getViewedPills(moduleId, 1);
+            pills    
+                .then(async pills => {
+
+                    let continues = 0;
+
+                    if (pills.length == 0) {
+                        // Primera Pill viewed => Mark module like in-progress (pills): 1
+                        
+                        const registrationModule = await updateRegistrationModuleStatus(moduleId, 1);
+                        if (registrationModule) {
+                            continues = 1
+                        } else {
+                            continues = 2
+                        }
+                    }
+
+                    if (continues < 2) {
+
+                        const registrationModuleFile = await getViewedPill(pillId);
+                        if (registrationModuleFile) {
+
+                            if (registrationModuleFile[0].viewed == 0) {
+
+                                const updatedRegistrationModuleFile = await updateRegistrationModuleFileViewed(pillId);
+                                if (updatedRegistrationModuleFile) {
+                            
+                                    res.status(200).json({
+                                        status: "ok",
+                                        code: 200,
+                                        message: continues == 1 ? "Module status updated and Pill marked like viewed" : "Pill marked like viewed",
+                                        refresh: 1
+                                    })
+                                } else {
+                                    res.status(400).json({"error":"Error updating viewed pill"});
+                                }
+                            } else {
+                                res.status(200).json({
+                                    status: "ok",
+                                    code: 200,
+                                    message: "No changes done",
+                                    refresh: 0
+                                })
+                            }
+
+                        } else {
+                            res.status(400).json({"error":"Viewed status pill not found"});
+                        } 
+
+                    } else {
+                        res.status(400).json({"error":"Error updating module status"});
+                    }
+                })
+                .catch(error => {
+                    res.status(400).json({"error":"Error recovering viewed pills"})
+            });
+
+        } else {
+            res.status(400).json({"error":"Necessary data is missing"});
+        }
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+}
+
 async function getFile (id) {
     
     const registration = await File.findAll({
@@ -72,4 +156,70 @@ async function getFile (id) {
     return registration;
 }
 
-module.exports = { getItem };
+async function getViewedPills (module_id, viewed) {
+
+    const pills = await RegistrationModuleFile.findAll({
+        attributes: ['id'],
+        where: {
+            module_id,
+            viewed
+        }
+    });
+    
+    return pills;
+
+}
+
+async function getViewedPill (id) {
+
+    const pill = await RegistrationModuleFile.findAll({
+        attributes: ['viewed'],
+        where: {
+            id
+        }
+    });
+    
+    return pill;
+
+}
+
+async function updateRegistrationModuleStatus(id, status) {
+
+    const jsonData = {        
+        status
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModule.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+};
+
+async function updateRegistrationModuleFileViewed(id) {
+
+    const jsonData = {        
+        viewed: 1
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModuleFile.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+                
+}
+
+module.exports = { getItem, setPillViewed };
