@@ -26,15 +26,6 @@ const getItems = (req, res) => {
 
 };
 
-async function getAllRegistrations () {
-    const registrations = await Registration.findAll({
-        /*include: [{
-            model: Course
-        }]*/
-    });
-    return registrations;
-}
-
 const getItem = (req, res) => {
 
     if (req.token) {
@@ -95,17 +86,47 @@ const getItem = (req, res) => {
 
                                 const registrationCourse = course[0];
 
+                                let numCompletedModules = 0;
+                                let numInProgressPillsModules = 0;
+                                let numInProgressActivitiesModules = 0;
+                                let numNotStartedModules = 0;
+
+                                const registrationModuleStatus = status => {
+
+                                    switch (status) {
+                                        case 0:
+                                            numNotStartedModules++;
+                                            return "not started";
+                                            break;
+                                        case 1:
+                                            numInProgressPillsModules++;
+                                            return "in progress (pills)";
+                                            break;
+                                        case 2:
+                                            numInProgressActivitiesModules++;
+                                            return "in progress (activities)";
+                                            break;
+                                        case 3:
+                                            numCompletedModules++;
+                                            return "completed";
+                                            break;
+                                    }
+        
+                                }
+
                                 const registrationModules = await getRegistrationModules(userRegistration.id);
                                 if (registrationModules.length > 0) {
 
                                     let modulesArray = [];
                                     promises = registrationModules.map(async module => {
+                                        
                                         const registrationModule = await getRegistrationModule(module.id);
                                         let moduleObj = new Object();
                                         moduleObj.id = registrationModule[0].id;
                                         moduleObj.name = registrationModule[0].name;
+                                        moduleObj.description = registrationModule[0].description;
                                         moduleObj.order = registrationModule[0].order;
-                                        moduleObj.status = registrationModule[0].status;
+                                        moduleObj.status = registrationModuleStatus(registrationModule[0].status);
                                         moduleObj.threshold = registrationModule[0].threshold;
                                         moduleObj.score = registrationModule[0].score;
                                         
@@ -113,10 +134,37 @@ const getItem = (req, res) => {
                                         moduleObj.num_activities = registrationModuleActivities.length;
                                         registrationActivitiesNum += registrationModuleActivities.length;
 
+                                        let correctActivities = 0;
+                                        let incorrectActivities = 0;
+                                        if (registrationModule[0].status > 1) {
+                                            
+                                            registrationModuleActivities.forEach (activity => {
+                                                
+                                                if (activity.result == 1) {
+                                                    correctActivities++;
+                                                } else {
+                                                    if (activity.result == 2) {
+                                                        incorrectActivities++;
+                                                    }    
+                                                }
+                                            })
+                                        }
+
+                                        moduleObj.num_activities_correct = correctActivities;
+                                        moduleObj.num_activities_incorrect = incorrectActivities;
+                                        moduleObj.num_activities_still_unanswered = moduleObj.num_activities - (incorrectActivities + correctActivities);
+
+                                        moduleObj.work_session_passed = 0;
+                                        if (registrationModule[0].score > 0) {
+                                            moduleObj.work_session_passed = (correctActivities >= (registrationModuleActivities.length * (registrationModule[0].threshold / 100))) ? 1 : 0;
+                                        }
+                                        
                                         const registrationModuleFiles = await getRegistrationModuleFiles(registrationModule[0].id);
+                                        const numPills = registrationModuleFiles.length;
+                                        let numViewedPills = 0;
+                                        let pillsArray = [];
                                         if (registrationModuleFiles.length > 0) {                                        
-                                            let pillsArray = [];
-                                            moduleObj.pills = pillsArray;
+                                            
                                             promises1 = registrationModuleFiles.map(async file => {
                                                 
                                                 let pillObj = new Object();
@@ -126,12 +174,22 @@ const getItem = (req, res) => {
 
                                                 pillsArray.push(pillObj);
 
+                                                if (file.viewed == 1) {
+                                                    numViewedPills++;
+                                                }
+
                                                 return registrationModuleFiles;
                                             })
                                         } else {
                                             let pillsArray = [];
-                                            moduleObj.pills = pillsArray;
+                                            
                                         }
+
+                                        moduleObj.num_pills = numPills;
+                                        moduleObj.num_pills_viewed = numViewedPills;
+                                        moduleObj.num_pills_not_viewed = numPills - numViewedPills;
+
+                                        moduleObj.pills = pillsArray;
                                         
                                         modulesArray.push(moduleObj);
 
@@ -154,10 +212,16 @@ const getItem = (req, res) => {
                                         let registrationJSON = {
                                             "course_data": {
                                                 "name": `${userRegistration.name}`,
+                                                "description": `${userRegistration.description !== null ? userRegistration.description : "" }`,
                                                 "from_date": `${userRegistration.from_date}`,
                                                 "to_date": `${userRegistration.to_date}`,
                                                 "level": registrationCourse.course_code,
-                                                "status": registrationStatus(userRegistration.status),                                       
+                                                "status": registrationStatus(userRegistration.status),     
+                                                "num_modules": registrationModules.length,
+                                                "num_completed_modules": numCompletedModules,
+                                                "num_inprogres_pills_modules": numInProgressPillsModules,
+                                                "num_inprogres_activities_modules": numInProgressActivitiesModules,
+                                                "num_notstarted_modules": numNotStartedModules
                                             },
                                             "teacher_data": teacherObj,
                                             "modules_data": modulesArray,
@@ -213,10 +277,73 @@ const getItem = (req, res) => {
 
 };
 
+const getTeacherDetails = (req, res) => {
+
+    if (req.token) {
+
+        const userId = req.token.user_id;
+        const registration = getRegistration(userId);
+        registration    
+            .then(async registration => {
+
+                const teacher = await getRegistrationTeacher(registration[0].teacher_id);
+                if (teacher.length == 1) {
+
+                    const registrationTeacher = teacher[0];  
+
+                    arraySkills = (registrationTeacher.skills) ? registrationTeacher.skills.split(",") : [];
+
+                    let infoTeacherObj = new Object();
+                    infoTeacherObj.title = registrationTeacher.title;
+                    infoTeacherObj.description = registrationTeacher.description;
+                    infoTeacherObj.skills = arraySkills;
+
+                    let teacherObj = new Object(); 
+                    teacherObj.id = registrationTeacher.id;
+                    teacherObj.name = registrationTeacher.name;
+                    teacherObj.info = infoTeacherObj;
+                    teacherObj.avatar = registrationTeacher.avatar;
+                    teacherObj.language = registrationTeacher.language;
+
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: "Teacher found",
+                        teacher: teacherObj
+                    })
+
+                } else {
+                    res.status(400).json({
+                        error: "Course's teacher not found"
+                    })    
+                } 
+
+            })
+            .catch(error => {
+                res.status(400).json("error 1")
+            });
+            
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+};
+
+async function getAllRegistrations () {
+    const registrations = await Registration.findAll({
+        /*include: [{
+            model: Course
+        }]*/
+    });
+    return registrations;
+}
+
 async function getRegistration (user_id) {
     
     const registration = await Registration.findAll({
-        attributes: ['id','from_date','to_date','name','threshold','status','exam_attempts','exam1_score','exam2_score','course_id','teacher_id'],
+        attributes: ['id','from_date','to_date','name','description','threshold','status','exam_attempts','exam1_score','exam2_score','course_id','teacher_id'],
         where: {
             user_id
         }
@@ -251,7 +378,7 @@ async function getRegistrationCourse (id) {
 async function getRegistrationModules(registration_id) {
 
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','name','threshold','order','status','score'],
+        attributes: ['id','name','description','threshold','order','status','score'],
         where: {
             registration_id
         },
@@ -266,7 +393,7 @@ async function getRegistrationModules(registration_id) {
 async function getRegistrationModule(id) {
 
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','name','threshold','order','status','score'],
+        attributes: ['id','name','description','threshold','order','status','score'],
         where: {
             id
         }
@@ -277,7 +404,7 @@ async function getRegistrationModule(id) {
 
 async function getRegistrationModuleActivities(module_id) {
     const moduleActivities = await RegistrationModuleActivity.findAll({
-        attributes: ['id'],
+        attributes: ['id','result'],
         where: {
             module_id
         }
@@ -297,4 +424,4 @@ async function getRegistrationModuleFiles (module_id) {
     return moduleFiles;
 }
 
-module.exports = { getItems, getItem };
+module.exports = { getItems, getItem, getTeacherDetails };

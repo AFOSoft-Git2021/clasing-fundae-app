@@ -61,11 +61,13 @@ route.post ('/login', (req, res) => {
                     })
                     .then (courses => {
                         if (courses.length == 1) {
-                            courseId = courses[0].id;    
+                            courseId = courses[0].id;
                             let courseName = courses[0].name;
+                            let courseDescription = courses[0].description;
                             let courseThreshold = courses[0].threshold;                             
+                            const teacherId = courses[0].teacher_id;
 
-                            const newRegistration = setRegistration(courseName, courseThreshold, userId, courseId);
+                            const newRegistration = setRegistration(courseName, courseDescription, courseThreshold, userId, courseId, teacherId);
                             return newRegistration;
                         } else {
                             res.status(400).json(returnJsonError("Fundae Course not found"));
@@ -279,7 +281,7 @@ async function setUserProfile (body) {
 async function findFundaeCourse(course_id) {
 
     const fundaeCourse = await FundaeCourse.findAll({
-        attributes: ['id','name','threshold'],
+        attributes: ['id','name','description','threshold','teacher_id'],
         where: {
             course_id: course_id,
         }
@@ -288,7 +290,7 @@ async function findFundaeCourse(course_id) {
     return fundaeCourse;    
 }
 
-async function setRegistration(name, threshold,user_id, course_id) {
+async function setRegistration(name, description, threshold,user_id, course_id, teacher_id) {
 
     const from_date = new Date();
     const to_date = new Date(new Date().setMonth(new Date().getMonth() + 1))
@@ -297,9 +299,11 @@ async function setRegistration(name, threshold,user_id, course_id) {
         from_date,
         to_date,
         name,
+        description,
         threshold,
         course_id,
-        user_id
+        user_id,
+        teacher_id
     };
 
     const registration = await Registration.create(jsonData);
@@ -309,7 +313,7 @@ async function setRegistration(name, threshold,user_id, course_id) {
 async function getFundaeCourseModules(course_id) {
 
     const fundaeCourseModule = await FundaeCourseModule.findAll({
-        attributes: ['id','name','threshold','order'],
+        attributes: ['id','name','description','threshold','order'],
         where: {
             course_id
         }
@@ -322,6 +326,7 @@ async function setRegistrationModule(courseModule, registrationId) {
 
     const jsonData = {
         name: courseModule.name,
+        description: courseModule.description,
         threshold: courseModule.threshold,
         order: courseModule.order,
         registration_id: registrationId

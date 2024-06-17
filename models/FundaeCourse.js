@@ -13,11 +13,18 @@ const FundaeCourse = sequelize.define  (
             type: DataTypes.STRING,
             allowNull: false
         },
+        description: {
+            type: DataTypes.TEXT
+        },
         threshold: {
             type: DataTypes.TINYINT,
             defaultValue: 50
         },
         course_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false
+        },
+        teacher_id: {
             type: DataTypes.INTEGER,
             allowNull: false
         }

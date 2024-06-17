@@ -1,5 +1,6 @@
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
+const RegistrationModuleWorkSession = require("../models/RegistrationModuleWorkSession");
 const Activity = require("../models/Activity");
 const ActivityFormat = require("../models/ActivityFormat");
 const ActivityQuestion = require("../models/ActivityQuestion");
@@ -499,32 +500,57 @@ const setWorkSessionActivityResponse = (req, res) => {
 
     if (req.token) {
 
-        if (
-            req.body.id && 
-            req.body.result && 
-            req.body.skill_id
-        ) {
-            
-            //const moduleId = req.token.worksession_id;
-            const id = req.body.id;
-            const result = req.body.result;
-            const skillId = req.body.skill_id;
+        if (req.token.worksession_id) {
 
-            const activityResponse = setActivityResponse(id, result, skillId);
-            activityResponse
-            .then (_ => {
-                res.status(200).json({
-                    status: "ok",
-                    code: 200,
-                    message: "Activity result saved successfully"
+            if (
+                req.body.id && 
+                req.body.result && 
+                req.body.skill_id && 
+                req.body.order 
+            ) {
+                
+                const moduleId = req.token.worksession_id;                
+                const id = req.body.id;
+                const result = req.body.result;
+                const skillId = req.body.skill_id;
+                const order = req.body.order;
+
+                const activityResponse = setActivityResponse(id, result, skillId);
+                activityResponse
+                .then (async _ => {
+
+                    if (parseInt(order) == 1) {
+
+                        const registrationModule = await updateRegistrationModuleStatusAndScore(moduleId, 2);
+                        if (registrationModule) {
+                            res.status(200).json({
+                                status: "ok",
+                                code: 200,
+                                message: "Activity result and module status saved successfully"
+                            })
+                        } else {
+                            res.status(400).json({"error":"Error changing module status"});
+                        }
+
+                    } else {
+                        res.status(200).json({
+                            status: "ok",
+                            code: 200,
+                            message: "Activity result saved successfully"
+                        })
+                    }
+                    
                 })
-            })
-            .catch (error => {
-                res.status(400).json({"error":"Error saving activity result"});
-            })
+                .catch (error => {
+                    res.status(400).json({"error":"Error saving activity result"});
+                })
+
+            } else {
+                res.status(400).json({"error":"Necessary data is missing"});
+            }
 
         } else {
-            res.status(400).json({"error":"Necessary data is missing"});
+            res.status(400).json({"error":"Module Registration Id not found"});
         }
 
     } else {
@@ -541,6 +567,8 @@ const getWorkSessionStatistics = (req, res) => {
         if (req.token.worksession_id) {
 
             const workSessionId = req.token.worksession_id;
+
+            console.log("START");
 
             const registrationModule = getRegistrationModule(workSessionId);
             registrationModule
@@ -596,18 +624,40 @@ const getWorkSessionStatistics = (req, res) => {
                         }
 
                         const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
-                        
-                        res.status(200).json({
-                            status: "ok",
-                            code: 200,
-                            message: "Work Session statistic generated sucessfully",
-                            statistics: {
+
+                        // Update module score
+                        const updatedRegistrationModule = updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber);
+                        updatedRegistrationModule
+                        .then (_ => {
+
+                            const statistics = {
                                 "module_name": moduleName,
                                 "passed": passedWorkSession,
                                 "correct_activities": activitiesCorrectNumber,
                                 "incorrect_activities": activitiesIncorrectNumber, 
                                 "skills": skillsArray
-                            }
+                            };
+
+                            // Saving Work Session info
+                            const registrationModuleWorkSession = setModuleWorkSession(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics));
+                            registrationModuleWorkSession
+                            .then (_ => {
+
+                                res.status(200).json({
+                                    status: "ok",
+                                    code: 200,
+                                    message: "Work Session statistic and module score generated and saved sucessfully",
+                                    statistics: statistics
+                                })
+
+                                console.log("END");
+                            })
+                            .catch (error => {
+                                res.status(400).json({"error":"Error recording Work Session info"});
+                            })
+                        })
+                        .catch (error => {
+                            res.status(400).json({"error":"Error updating module score"});
                         })
                     })
                     .catch (error => {
@@ -793,5 +843,56 @@ function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
 
     return [skillId,viewMode];
 }
+
+async function updateRegistrationModuleStatusAndScore(id, status) {
+
+    const jsonData = {        
+        status,
+        score: 0
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModule.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+};
+
+async function updateRegistrationModuleScoreAndSetCompeted(id, score) {
+
+    const jsonData = {        
+        score,
+        status: 3
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModule.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+};
+
+async function setModuleWorkSession(module_id, score, json_data) {
+    const jsonData = { 
+        score,       
+        json_data,
+        module_id
+    };
+
+    const registrationModuleWorkSession = await RegistrationModuleWorkSession.create(jsonData);
+    return registrationModuleWorkSession;
+};
 
 module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics };

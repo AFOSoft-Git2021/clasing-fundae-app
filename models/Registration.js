@@ -21,6 +21,9 @@ const Registration = sequelize.define  (
             type: DataTypes.STRING,
             allowNull: false
         },
+        description: {
+            type: DataTypes.TEXT
+        },
         threshold: {
             type: DataTypes.TINYINT,
             defaultValue: 50
