@@ -40,7 +40,15 @@ const Registration = sequelize.define  (
             type: DataTypes.TINYINT,            
             defaultValue: 0
         },
+        exam1_json_data: {
+            type: DataTypes.TINYINT,            
+            defaultValue: 0
+        },
         exam2_score: {
+            type: DataTypes.TINYINT,            
+            defaultValue: 0
+        },
+        exam2_json_data: {
             type: DataTypes.TINYINT,            
             defaultValue: 0
         },

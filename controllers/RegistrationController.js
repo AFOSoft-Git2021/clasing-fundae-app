@@ -54,7 +54,16 @@ const getItem = (req, res) => {
                                     return "in progress";
                                     break;
                                 case 1:
-                                    return "completed";
+                                    return "exam1";
+                                    break;
+                                case 2:
+                                    return "exam2";
+                                    break;
+                                case 3:
+                                    return "completed ok";
+                                    break;
+                                case 4:
+                                    return "completed ko";
                                     break;
                             }
 

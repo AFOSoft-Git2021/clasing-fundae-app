@@ -4,6 +4,7 @@ const userProfile = require("./routes/user_profiles");
 const registration = require("./routes/registrations");
 const pill = require("./routes/pills");
 const moduleRegistration = require("./routes/modules");
+const examRegistration = require('./routes/exam');
 const auth = require("./routes/auth");
 const express = require("express");
 const { dbConnectMySql } = require("./config/mysql")
@@ -18,6 +19,7 @@ app.use('/api/user_profiles', userProfile);
 app.use('/api/registrations', registration);
 app.use('/api/pills',pill);
 app.use('/api/modules',moduleRegistration);
+app.use('/api/exam',examRegistration);
 app.use('/api/auth',auth);
 app.use('/api',public);
 

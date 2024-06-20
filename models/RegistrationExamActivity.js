@@ -20,6 +20,10 @@ const RegistrationExamActivity = sequelize.define  (
         order: {
             type: DataTypes.SMALLINT,
             defaultValue: 0
+        },
+        skill_id: {
+            type: DataTypes.INTEGER,
+            defaultValue: 1
         },        
         activity_id: {
             type: DataTypes.INTEGER,
