@@ -22,30 +22,43 @@ const getExamInfo = (req, res) => {
 
             let examInfo = new Object();
 
-            const activities = getRegistrationExamActivities(workSessionId);
-            activities
-            .then(activities => {
+            const registration = getRegistrationbyId(workSessionId);
+            registration
+            .then (registration => { 
 
-                console.log("workSessionId: ", workSessionId);
-                
-                examInfo.num_activities = activities.length;
-                let examInitiated = false;
-                activities.forEach (activity => {
-                    if (activity.result > 0) {
-                        examInitiated = true;
-                    }
-                }); 
+                examInfo.name = registration[0].name;
+                examInfo.threshold = registration[0].threshold;
 
-                examInfo.status = examInitiated ? 1 : 0;
+                const activities = getRegistrationExamActivities(workSessionId);
+                activities
+                .then(activities => {
 
-                const token = jwt.sign({user_id: req.token.user_id, worksession_type:1, worksession_id:workSessionId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+                    console.log("workSessionId: ", workSessionId);
+                    
+                    examInfo.num_activities = activities.length;
+                    let examInitiated = false;
+                    activities.forEach (activity => {
+                        if (activity.result > 0) {
+                            examInitiated = true;
+                        }
+                    }); 
 
-                res.status(200).json({
-                    status: "ok",
-                    code: 200,
-                    message: "Exam Info recovered successfully",
-                    exam_info: examInfo,
-                    jwt: token
+                    examInfo.status = examInitiated ? 1 : 0;
+
+                    const token = jwt.sign({user_id: req.token.user_id, worksession_type:1, worksession_id:workSessionId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: "Exam Info recovered successfully",
+                        exam_info: examInfo,
+                        jwt: token
+                    })
+                })
+                .catch(error => {
+                    res.status(400).json({
+                        error: error
+                    })
                 })
             })
             .catch(error => {
@@ -476,6 +489,18 @@ async function getRegistration (user_id) {
         attributes: ['id','from_date','to_date','name','description','threshold','status','exam_attempts','exam1_score','exam2_score','course_id','teacher_id'],
         where: {
             user_id
+        }
+    });
+    
+    return registration;
+}
+
+async function getRegistrationbyId (id) {
+    
+    const registration = await Registration.findAll({
+        attributes: ['id','from_date','to_date','name','description','threshold','status','exam_attempts','exam1_score','exam2_score','course_id','teacher_id'],
+        where: {
+            id
         }
     });
     
