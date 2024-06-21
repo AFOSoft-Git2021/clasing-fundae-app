@@ -641,7 +641,7 @@ const getWorkSessionStatistics = (req, res) => {
                         .then (_ => {
 
                             const statistics = {
-                                "module_name": moduleName,
+                                "name": moduleName,
                                 "passed": passedWorkSession,
                                 "correct_activities": activitiesCorrectNumber,
                                 "incorrect_activities": activitiesIncorrectNumber, 

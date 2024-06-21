@@ -435,8 +435,9 @@ const getExamStatistics = (req, res) => {
                         const passedExam = (activitiesCorrectNumber >= (examNumActivities * (threshold / 100))) ? 1 : 0;
 
                         const statistics = {
-                            "course_name": courseName,
+                            "name": courseName,
                             "passed": passedExam,
+                            "attempts": attempts,
                             "correct_activities": activitiesCorrectNumber,
                             "incorrect_activities": activitiesIncorrectNumber, 
                             "skills": skillsArray
