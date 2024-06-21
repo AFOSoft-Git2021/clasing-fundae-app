@@ -343,7 +343,7 @@ const setExamActivityResponse = (req, res) => {
                         })
                     } else {
                         res.status(400).json({
-                            error: "Registration not found"
+                            error: "Registration not found" + user_id
                         })
                     }
                 })
