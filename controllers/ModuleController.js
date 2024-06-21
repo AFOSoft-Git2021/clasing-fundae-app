@@ -9,6 +9,8 @@ const Skill = require("../models/Skill");
 const fs = require('fs').promises;
 const jwt = require("jsonwebtoken"); 
 
+const { Op } = require('sequelize');
+
 /*
 * @param {*} req  
 */
@@ -521,15 +523,23 @@ const setWorkSessionActivityResponse = (req, res) => {
 
                     if (parseInt(order) == 1) {
 
-                        const registrationModule = await updateRegistrationModuleStatusAndScore(moduleId, 2);
+                        const registrationModule = await InitializeRegistrationModuleActivities(moduleId);
                         if (registrationModule) {
-                            res.status(200).json({
-                                status: "ok",
-                                code: 200,
-                                message: "Activity result and module status saved successfully"
-                            })
+
+                            const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(moduleId, 2);
+                            if (registrationModuleActivities) {
+
+                                res.status(200).json({
+                                    status: "ok",
+                                    code: 200,
+                                    message: "Activity result and module status saved successfully"
+                                })
+                            } else {
+                                res.status(400).json({"error":"Error changing module status"});
+                            }
+
                         } else {
-                            res.status(400).json({"error":"Error changing module status"});
+                            res.status(400).json({"error":"Error initilizing module activities"});
                         }
 
                     } else {
@@ -842,6 +852,28 @@ function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
     }
 
     return [skillId,viewMode];
+}
+
+async function InitializeRegistrationModuleActivities(module_id) {
+
+    const jsonData = {                
+        result: 0,
+        skill_id: 1
+    };
+
+    const jsonWhere = {        
+        module_id,
+        //order: {[DataTypes.gt]:1} //order > 1
+    };
+
+    const registrationModuleActivities = await RegistrationModuleActivity.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+
+    return registrationModuleActivities;
 }
 
 async function updateRegistrationModuleStatusAndScore(id, status) {

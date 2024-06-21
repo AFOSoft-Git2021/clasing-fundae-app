@@ -635,7 +635,7 @@ function setActivitySkillAndViewMode(formatId, questionAudio, answersAudio) {
 async function updateRegistrationExamStatusAndAttempt(id, exam_attempts) {
 
     const jsonData = {        
-        status: 1,
+        status: exam_attempts,
         exam_attempts
     };
 
@@ -655,9 +655,9 @@ async function updateRegistrationExamStatusAndAttempt(id, exam_attempts) {
 async function updateRegistrationExamScoreStatisticsAndSetCompeted (id, score, attempts, passedExam, statistics) {
 
     let jsonData = new Object();
-    jsonData.exam_attempts = attempts + 1;   
+    //jsonData.exam_attempts = attempts + 1;   
 
-    if (attempts == 0) {
+    if (attempts == 1) {
         jsonData.exam1_score = score;
         jsonData.exam1_json_data = statistics;
         if (passedExam == 0) {

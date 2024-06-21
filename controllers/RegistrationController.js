@@ -3,6 +3,7 @@ const FundaeTeacher = require("../models/FundaeTeacher");
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
 const RegistrationModuleFile = require("../models/RegistrationModuleFile");
+const RegistrationExamActivity = require("../models/RegistrationExamActivity");
 const File = require("../models/File");
 const FundaeCourse = require("../models/FundaeCourse");
 const Course = require("../models/Course");
@@ -69,12 +70,21 @@ const getItem = (req, res) => {
 
                         }
 
+                        let registrationExamActivitiesNum = 0;
+                        let examActivityinUse = 0;
+                        const registrationExamActivities = await getRegistrationExamActivities(userRegistration.id);
+                        registrationExamActivitiesNum += registrationExamActivities.length;
+                        for (let i=0; i<registrationExamActivities.length;i++) {
+                            if (registrationExamActivities[i].result == 0) {
+                                examActivityinUse = registrationExamActivities[i].order;
+                                break;
+                            }
+                        };
+
                         const teacher = await getRegistrationTeacher(userRegistration.teacher_id);
                         if (teacher.length == 1) {
 
                             const registrationTeacher = teacher[0];
-
-                            let registrationActivitiesNum = 0;
 
                             let teacherObj = new Object(); 
                             teacherObj.id = registrationTeacher.id;
@@ -141,7 +151,6 @@ const getItem = (req, res) => {
                                         
                                         const registrationModuleActivities = await getRegistrationModuleActivities(registrationModule[0].id);
                                         moduleObj.num_activities = registrationModuleActivities.length;
-                                        registrationActivitiesNum += registrationModuleActivities.length;
 
                                         let correctActivities = 0;
                                         let incorrectActivities = 0;
@@ -216,7 +225,8 @@ const getItem = (req, res) => {
                                         //Ordenamos el array de módulos por el dato "order"
                                         modulesArray.sort((a, b) => parseInt(a.order) - parseInt(b.order));
 
-                                        examObj.num_activities = registrationActivitiesNum; 
+                                        examObj.num_activities = registrationExamActivitiesNum; 
+                                        examObj.activity_in_use = examActivityinUse;
                                         
                                         let registrationJSON = {
                                             "course_data": {
@@ -431,6 +441,17 @@ async function getRegistrationModuleFiles (module_id) {
     });
 
     return moduleFiles;
+}
+
+async function getRegistrationExamActivities(registration_id) {
+    const mexamctivities = await RegistrationExamActivity.findAll({
+        attributes: ['id','result','order'],
+        where: {
+            registration_id
+        }
+    });
+
+    return mexamctivities;
 }
 
 module.exports = { getItems, getItem, getTeacherDetails };
