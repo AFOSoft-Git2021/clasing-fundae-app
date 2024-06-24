@@ -720,37 +720,50 @@ const resetWorkSession = (req, res) => {
 
     if (req.token) {
 
-        const workSessionId = req.token.worksession_id;
+        if (req.params.id)  {
 
-        if (workSessionId) {
+            let workSessionId = 0;
 
-            console.log("START");
+            if (parseInt(req.params.id) > 0)  {
+                workSessionId = req.params.id;
+            } else {
+                workSessionId = req.token.worksession_id;
+            }
 
-            const registrationModule = InitializeRegistrationModuleActivities(workSessionId)
-            .then(async _ => {
+            if (workSessionId) {
 
-                const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(workSessionId, 2);
-                if (registrationModuleActivities) {
+                console.log("START");
 
-                    res.status(200).json({
-                        status: "ok",
-                        code: 200,
-                        message: "Work Session and module status reset successfully"
-                    })
+                const registrationModule = InitializeRegistrationModuleActivities(workSessionId)
+                .then(async _ => {
 
-                    console.log("END");
-                } else {
-                    res.status(400).json({"error":"Error changing module status"});
-                }
+                    const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(workSessionId, 2);
+                    if (registrationModuleActivities) {
 
-            })
-            .catch (error => {
-                res.status(400).json({"error":"Error recovering works essions attempts"});
-            })
+                        res.status(200).json({
+                            status: "ok",
+                            code: 200,
+                            message: "Work Session and module status reset successfully"
+                        })
 
+                        console.log("END");
+                    } else {
+                        res.status(400).json({"error":"Error changing module status"});
+                    }
+
+                })
+                .catch (error => {
+                    res.status(400).json({"error":"Error recovering works essions attempts"});
+                })
+
+            } else {
+                res.status(400).json({
+                    error: "JWT not contains WorkSession Data"
+                })
+            }
         } else {
             res.status(400).json({
-                error: "JWT not contains WorkSession Data"
+                error: "Neccesary Data not founf"
             })
         }
             

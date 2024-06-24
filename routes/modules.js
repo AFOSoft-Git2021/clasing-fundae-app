@@ -9,7 +9,7 @@ route.get ('/get-work-session', verifyToken, getWorkSession);
 route.post ('/set-work-session-activity-response', verifyToken, setWorkSessionActivityResponse);
 route.get ('/get-work-session-statistics', verifyToken, getWorkSessionStatistics);
 route.get ('/init-work-session', verifyToken, initWorkSession);
-route.get ('/reset-work-session', verifyToken, resetWorkSession);
+route.get ('/reset-work-session/:id', verifyToken, resetWorkSession);
 
 module.exports = route;
 
