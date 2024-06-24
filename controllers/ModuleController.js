@@ -697,7 +697,7 @@ const resetWorkSession = (req, res) => {
                     res.status(200).json({
                         status: "ok",
                         code: 200,
-                        message: "Work Session and Module status reset successfully"
+                        message: "Work Session and module status reset successfully"
                     })
 
                     console.log("END");
