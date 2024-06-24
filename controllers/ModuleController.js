@@ -678,6 +678,44 @@ const getWorkSessionStatistics = (req, res) => {
     }
 }
 
+const initWorkSession = (req, res) => {
+
+    if (req.token) {
+
+        const workSessionId = req.token.worksession_id;
+
+        if (workSessionId) {
+
+            console.log("START");
+
+            const registrationModuleActivities =  updateRegistrationModuleStatusAndScore(workSessionId, 2);
+            if (registrationModuleActivities) {
+
+                res.status(200).json({
+                    status: "ok",
+                    code: 200,
+                    message: "Module status initiated successfully"
+                })
+
+                console.log("END");
+            } else {
+                res.status(400).json({"error":"Error changing module status"});
+            }
+
+        } else {
+            res.status(400).json({
+                error: "JWT not contains WorkSession Data"
+            })
+        }
+            
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
 const resetWorkSession = (req, res) => {
 
     if (req.token) {
@@ -970,4 +1008,4 @@ async function getModuleWorkSessions(module_id) {
     return workSessions;
 };
 
-module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, resetWorkSession };
+module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, initWorkSession, resetWorkSession };
