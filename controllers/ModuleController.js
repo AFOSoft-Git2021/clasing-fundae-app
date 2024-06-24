@@ -521,35 +521,11 @@ const setWorkSessionActivityResponse = (req, res) => {
                 activityResponse
                 .then (async _ => {
 
-                    if (parseInt(order) == 1) {
-
-                        /*const registrationModule = await InitializeRegistrationModuleActivities(moduleId);
-                        if (registrationModule) {*/
-
-                            const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(moduleId, 2);
-                            if (registrationModuleActivities) {
-
-                                res.status(200).json({
-                                    status: "ok",
-                                    code: 200,
-                                    message: "Activity result and module status saved successfully"
-                                })
-                            } else {
-                                res.status(400).json({"error":"Error changing module status"});
-                            }
-
-                        /*} else {
-                            res.status(400).json({"error":"Error initilizing module activities"});
-                        }*/
-
-                    } else {
-                        res.status(200).json({
-                            status: "ok",
-                            code: 200,
-                            message: "Activity result saved successfully"
-                        })
-                    }
-                    
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: "Activity result and saved successfully"
+                    })
                 })
                 .catch (error => {
                     res.status(400).json({"error":"Error saving activity result"});
@@ -710,19 +686,29 @@ const resetWorkSession = (req, res) => {
 
         if (workSessionId) {
 
-            const registrationModule = InitializeRegistrationModuleActivities(workSessionId);
-            if (registrationModule) {
+            console.log("START");
+
+            const registrationModule = InitializeRegistrationModuleActivities(workSessionId)
+            .then(async _ => {
+
+                const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(workSessionId, 2);
+                if (registrationModuleActivities) {
 
                     res.status(200).json({
                         status: "ok",
                         code: 200,
-                        message: "Module Work Session reset successfully"
+                        message: "Work Session and Module status reset successfully"
                     })
-                
 
-            } else {
-                res.status(400).json({"error":"Error initilizing module activities"});
-            }
+                    console.log("END");
+                } else {
+                    res.status(400).json({"error":"Error changing module status"});
+                }
+
+            })
+            .catch (error => {
+                res.status(400).json({"error":"Error recovering works essions attempts"});
+            })
 
         } else {
             res.status(400).json({
