@@ -583,99 +583,108 @@ const getWorkSessionStatistics = (req, res) => {
             const registrationModule = getRegistrationModule(workSessionId);
             registrationModule
             .then (registrationModule => {
+
+                const moduleWorkSessions = getModuleWorkSessions(workSessionId);
+                moduleWorkSessions
+                .then (moduleWorkSessions => { 
             
-                const skills = getSkills();
-                skills
-                .then (skills => {
+                    const skills = getSkills();
+                    skills
+                    .then (skills => {
 
-                    let skillsArray = [];
-                    skills.forEach(skill => {
-                        let skillObject = new Object();
-                        skillObject.id = skill.id;
-                        skillObject.name = skill.name;
-                        skillObject.numberCorrectActivities = 0;
-                        skillObject.numberIncorrectActivities = 0;
-                        skillObject.percentage = 0;
-                        skillsArray.push(skillObject);
-                    });
-
-                    const activities = getRegistrationModuleActivities(workSessionId);
-                    activities
-                    .then (activities => {
-
-                        let activitiesCorrectNumber = 0;
-                        let activitiesIncorrectNumber = 0;
-
-                        activities.forEach (activity => {
-                            for (let skill of skillsArray) {
-                                if (skill.id == activity.skill_id) {
-                                    if (activity.result == 1) {
-                                        skill.numberCorrectActivities++;
-                                        activitiesCorrectNumber++;
-                                    } else {
-                                        if (activity.result == 2) {
-                                            skill.numberIncorrectActivities++;
-                                            activitiesIncorrectNumber++;
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
+                        let skillsArray = [];
+                        skills.forEach(skill => {
+                            let skillObject = new Object();
+                            skillObject.id = skill.id;
+                            skillObject.name = skill.name;
+                            skillObject.numberCorrectActivities = 0;
+                            skillObject.numberIncorrectActivities = 0;
+                            skillObject.percentage = 0;
+                            skillsArray.push(skillObject);
                         });
 
-                        const workSessionNumActivities = activitiesCorrectNumber + activitiesIncorrectNumber;
-                        const threshold = registrationModule[0].threshold;
-                        const moduleName = registrationModule[0].name;
+                        const activities = getRegistrationModuleActivities(workSessionId);
+                        activities
+                        .then (activities => {
 
-                        for (let skill of skillsArray) {
-                            skill.percentage = ((skill.numberCorrectActivities + skill.numberIncorrectActivities) > 0) ? (100 * skill.numberCorrectActivities) / (skill.numberCorrectActivities + skill.numberIncorrectActivities) : 0;
+                            let activitiesCorrectNumber = 0;
+                            let activitiesIncorrectNumber = 0;
 
-                            skill.percentage = Math.trunc(skill.percentage*100)/100;
-                        }
+                            activities.forEach (activity => {
+                                for (let skill of skillsArray) {
+                                    if (skill.id == activity.skill_id) {
+                                        if (activity.result == 1) {
+                                            skill.numberCorrectActivities++;
+                                            activitiesCorrectNumber++;
+                                        } else {
+                                            if (activity.result == 2) {
+                                                skill.numberIncorrectActivities++;
+                                                activitiesIncorrectNumber++;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                }
+                            });
 
-                        const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
+                            const workSessionNumActivities = activitiesCorrectNumber + activitiesIncorrectNumber;
+                            const threshold = registrationModule[0].threshold;
+                            const moduleName = registrationModule[0].name;
 
-                        // Update module score
-                        const updatedRegistrationModule = updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber);
-                        updatedRegistrationModule
-                        .then (_ => {
+                            for (let skill of skillsArray) {
+                                skill.percentage = ((skill.numberCorrectActivities + skill.numberIncorrectActivities) > 0) ? (100 * skill.numberCorrectActivities) / (skill.numberCorrectActivities + skill.numberIncorrectActivities) : 0;
 
-                            const statistics = {
-                                "name": moduleName,
-                                "passed": passedWorkSession,
-                                "correct_activities": activitiesCorrectNumber,
-                                "incorrect_activities": activitiesIncorrectNumber, 
-                                "skills": skillsArray
-                            };
+                                skill.percentage = Math.trunc(skill.percentage*100)/100;
+                            }
 
-                            // Saving Work Session info
-                            const registrationModuleWorkSession = setModuleWorkSession(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics));
-                            registrationModuleWorkSession
+                            const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
+
+                            // Update module score
+                            const updatedRegistrationModule = updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber);
+                            updatedRegistrationModule
                             .then (_ => {
 
-                                res.status(200).json({
-                                    status: "ok",
-                                    code: 200,
-                                    message: "Work Session statistic and module score generated and saved sucessfully",
-                                    statistics: statistics
-                                })
+                                const statistics = {
+                                    "name": moduleName,
+                                    "work_sesion_attempt": moduleWorkSessions[0].length,
+                                    "passed": passedWorkSession,
+                                    "correct_activities": activitiesCorrectNumber,
+                                    "incorrect_activities": activitiesIncorrectNumber, 
+                                    "skills": skillsArray
+                                };
 
-                                console.log("END");
+                                // Saving Work Session info
+                                const registrationModuleWorkSession = setModuleWorkSession(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics));
+                                registrationModuleWorkSession
+                                .then (_ => {
+
+                                    res.status(200).json({
+                                        status: "ok",
+                                        code: 200,
+                                        message: "Work Session statistic and module score generated and saved sucessfully",
+                                        statistics: statistics
+                                    })
+
+                                    console.log("END");
+                                })
+                                .catch (error => {
+                                    res.status(400).json({"error":"Error recording Work Session info"});
+                                })
                             })
                             .catch (error => {
-                                res.status(400).json({"error":"Error recording Work Session info"});
+                                res.status(400).json({"error":"Error updating module score"});
                             })
                         })
                         .catch (error => {
-                            res.status(400).json({"error":"Error updating module score"});
+                            res.status(400).json({"error":"Error recovering work session activities"});
                         })
                     })
                     .catch (error => {
-                        res.status(400).json({"error":"Error recovering work session activities"});
+                        res.status(400).json({"error":"Error recovering list of skills"});
                     })
                 })
                 .catch (error => {
-                    res.status(400).json({"error":"Error recovering list of skills"});
+                    res.status(400).json({"error":"Error recovering works essions attempts"});
                 })
             })
             .catch (error => {
@@ -858,7 +867,8 @@ async function InitializeRegistrationModuleActivities(module_id) {
 
     const jsonData = {                
         result: 0,
-        skill_id: 1
+        skill_id: 1,
+        in_use: 1
     };
 
     const jsonWhere = {        
@@ -925,6 +935,17 @@ async function setModuleWorkSession(module_id, score, json_data) {
 
     const registrationModuleWorkSession = await RegistrationModuleWorkSession.create(jsonData);
     return registrationModuleWorkSession;
+};
+
+async function getModuleWorkSessions(module_id) {
+    const workSessions = await RegistrationModuleWorkSession.findAll({
+        attributes: ['id'],
+        where: {
+            module_id
+        }
+    });
+
+    return workSessions;
 };
 
 module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics };
