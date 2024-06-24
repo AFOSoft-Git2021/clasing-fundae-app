@@ -646,7 +646,7 @@ const getWorkSessionStatistics = (req, res) => {
 
                                 const statistics = {
                                     "name": moduleName,
-                                    "work_sesion_attempt": moduleWorkSessions[0].length,
+                                    "attempts": moduleWorkSessions.length,
                                     "passed": passedWorkSession,
                                     "correct_activities": activitiesCorrectNumber,
                                     "incorrect_activities": activitiesIncorrectNumber, 
