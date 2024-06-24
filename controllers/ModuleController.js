@@ -523,8 +523,8 @@ const setWorkSessionActivityResponse = (req, res) => {
 
                     if (parseInt(order) == 1) {
 
-                        const registrationModule = await InitializeRegistrationModuleActivities(moduleId);
-                        if (registrationModule) {
+                        /*const registrationModule = await InitializeRegistrationModuleActivities(moduleId);
+                        if (registrationModule) {*/
 
                             const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(moduleId, 2);
                             if (registrationModuleActivities) {
@@ -538,9 +538,9 @@ const setWorkSessionActivityResponse = (req, res) => {
                                 res.status(400).json({"error":"Error changing module status"});
                             }
 
-                        } else {
+                        /*} else {
                             res.status(400).json({"error":"Error initilizing module activities"});
-                        }
+                        }*/
 
                     } else {
                         res.status(200).json({
@@ -700,6 +700,42 @@ const getWorkSessionStatistics = (req, res) => {
             error: "JWT must be provided"
         })
     }
+}
+
+const resetWorkSession = (req, res) => {
+
+    if (req.token) {
+
+        const workSessionId = req.token.worksession_id;
+
+        if (workSessionId) {
+
+            const registrationModule = InitializeRegistrationModuleActivities(workSessionId);
+            if (registrationModule) {
+
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: "Module Work Session reset successfully"
+                    })
+                
+
+            } else {
+                res.status(400).json({"error":"Error initilizing module activities"});
+            }
+
+        } else {
+            res.status(400).json({
+                error: "JWT not contains WorkSession Data"
+            })
+        }
+            
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
 }
 
 async function getRegistrationModule(id) {
@@ -868,7 +904,7 @@ async function InitializeRegistrationModuleActivities(module_id) {
     const jsonData = {                
         result: 0,
         skill_id: 1,
-        in_use: 1
+        in_use: 0
     };
 
     const jsonWhere = {        
@@ -948,4 +984,4 @@ async function getModuleWorkSessions(module_id) {
     return workSessions;
 };
 
-module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics };
+module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, resetWorkSession };
