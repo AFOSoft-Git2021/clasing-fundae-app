@@ -433,7 +433,6 @@ const getExamStatistics = (req, res) => {
                         }
 
                         const passedExam = (activitiesCorrectNumber >= (examNumActivities * (threshold / 100))) ? 1 : 0;
-
                         const statistics = {
                             "name": courseName,
                             "passed": passedExam,
@@ -448,12 +447,30 @@ const getExamStatistics = (req, res) => {
                         updatedRegistration
                         .then (_ => {
 
-                            res.status(200).json({
-                                status: "ok",
-                                code: 200,
-                                message: "Exam statistic, attempts and score generated and saved sucessfully",
-                                statistics: statistics
-                            })
+                            if (passedExam == 1) {
+
+                                res.status(200).json({
+                                    status: "ok",
+                                    code: 200,
+                                    message: "Exam statistic, attempts and score generated and saved sucessfully",
+                                    statistics: statistics
+                                })
+                            } else {
+                                // Reset exam activities
+                                const updatedRegistration = InitializeRegistrationExamActivities(registrationId);
+                                updatedRegistration
+                                .then (_ => {
+                                    res.status(200).json({
+                                        status: "ok",
+                                        code: 200,
+                                        message: "Exam statistic, attempts and score generated and saved sucessfully",
+                                        statistics: statistics
+                                    })
+                                })
+                                .catch (error => {
+                                    res.status(400).json({"error":"Error recording Work Session info"});
+                                })
+                            }
 
                             console.log("END");
                         })
@@ -713,6 +730,28 @@ async function updateRegistrationExamScoreStatisticsAndSetCompeted (id, score, a
     );
     return moduleResponse;
 };
+
+async function InitializeRegistrationExamActivities(registration_id) {
+
+    const jsonData = {                
+        result: 0,
+        skill_id: 1,
+        in_use: 0
+    };
+
+    const jsonWhere = {        
+        registration_id
+    };
+
+    const registrationModuleActivities = await RegistrationExamActivity.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+
+    return registrationModuleActivities;
+}
 
 async function setModuleWorkSession(module_id, score, json_data) {
     const jsonData = { 
