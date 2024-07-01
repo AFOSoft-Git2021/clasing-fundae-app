@@ -2,7 +2,7 @@ const { sequelize } = require ("../config/mysql");
 const { DataTypes } = require ("sequelize");
 
 const Course = sequelize.define  (
-    "Courses",
+    "courses",
     {
         id: {
             type: DataTypes.INTEGER,

@@ -1,8 +1,9 @@
 const express = require("express");
 const verifyToken = require("../middlewares/auth");
-const { getItems, getItem, getTeacherDetails } = require("../controllers/RegistrationController");
+const { untokenize, getItems, getItem, getTeacherDetails } = require("../controllers/RegistrationController");
 const route = express.Router();
 
+route.get ('/untokenize', verifyToken, untokenize);
 route.get ('/', verifyToken, getItems);
 route.get ('/:id', verifyToken, getItem);
 route.get ('/teacher/get-details', verifyToken, getTeacherDetails)

@@ -274,8 +274,9 @@ const getWorkSession = (req, res) => {
                                                 if (activityQuestion.text !== null) {
 
                                                     // read file asynchronously
-                                                    html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
-                                                            
+                                                    //html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
+                                                    html = await fs.readFile(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html", "utf8");  
+                                                    
                                                     newActivity.text = html;
                                                     activitiesArray.push(newActivity);
                                                 

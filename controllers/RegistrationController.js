@@ -7,10 +7,32 @@ const RegistrationExamActivity = require("../models/RegistrationExamActivity");
 const File = require("../models/File");
 const FundaeCourse = require("../models/FundaeCourse");
 const Course = require("../models/Course");
+const jwt = require("jsonwebtoken");
 
 /*
 * @param {*} req  
 */
+
+const untokenize = (req, res) => {
+
+    if (req.token) {
+
+        const token = jwt.sign({user_id: req.token.user_id},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+
+        res.status(200).json({
+            status: "ok",
+            code: 200,
+            message: "Work Session JWT untokenize successfully",
+            jwt: token
+        })
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
 
 const getItems = (req, res) => {
 
@@ -454,4 +476,4 @@ async function getRegistrationExamActivities(registration_id) {
     return mexamctivities;
 }
 
-module.exports = { getItems, getItem, getTeacherDetails };
+module.exports = { untokenize, getItems, getItem, getTeacherDetails };
