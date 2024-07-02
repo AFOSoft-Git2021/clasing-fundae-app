@@ -252,6 +252,7 @@ const getItem = (req, res) => {
                                         
                                         let registrationJSON = {
                                             "course_data": {
+                                                "id": `${userRegistration.id}`,
                                                 "name": `${userRegistration.name}`,
                                                 "description": `${userRegistration.description !== null ? userRegistration.description : "" }`,
                                                 "from_date": `${userRegistration.from_date}`,

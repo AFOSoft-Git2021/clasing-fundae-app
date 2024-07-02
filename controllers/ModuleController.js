@@ -15,6 +15,48 @@ const { Op } = require('sequelize');
 * @param {*} req  
 */
 
+const tokenize = (req, res) => {
+
+    if (req.token) {
+
+        if (req.token.worksession_id) {
+
+            if (
+                req.body.wstype && 
+                req.body.wsid && 
+                req.body.wsreset 
+            ) {
+                
+                const wstype = req.body.wstype;                
+                const wsid = req.body.wsid;
+                const wsreset = req.body.wsreset;
+
+                res.status(200).json({
+                    status: "ok",
+                    code: 200,
+                    message: "Token unwrapped successfully",
+                    wstype : wstype,
+                    wsid : wsid,
+                    wsreset : wsreset
+                })
+                
+
+            } else {
+                res.status(400).json({"error":"Necessary data is missing"});
+            }
+
+        } else {
+            res.status(400).json({"error":"Module Registration Id not found"});
+        }
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+
+}
+
 const getWorkSessionType = (req, res) => {
 
     if (req.token) {
@@ -1022,4 +1064,4 @@ async function getModuleWorkSessions(module_id) {
     return workSessions;
 };
 
-module.exports = { getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, initWorkSession, resetWorkSession };
+module.exports = { tokenize, getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, initWorkSession, resetWorkSession };
