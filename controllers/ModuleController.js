@@ -19,33 +19,27 @@ const unwrapToken = (req, res) => {
 
     if (req.token) {
 
-        if (req.token.worksession_id) {
+        if (
+            req.token.wstype && 
+            req.token.wsid && 
+            req.token.wsreset 
+        ) {
+            
+            const wstype = req.token.wstype;                
+            const wsid = req.token.wsid;
+            const wsreset = req.token.wsreset;
 
-            if (
-                req.body.wstype && 
-                req.body.wsid && 
-                req.body.wsreset 
-            ) {
-                
-                const wstype = req.body.wstype;                
-                const wsid = req.body.wsid;
-                const wsreset = req.body.wsreset;
-
-                res.status(200).json({
-                    status: "ok",
-                    code: 200,
-                    message: "Token unwrapped successfully",
-                    wstype : wstype,
-                    wsid : wsid,
-                    wsreset : wsreset
-                })                
-
-            } else {
-                res.status(400).json({"error":"Necessary data is missing"});
-            }
+            res.status(200).json({
+                status: "ok",
+                code: 200,
+                message: "Token unwrapped successfully",
+                wstype : wstype,
+                wsid : wsid,
+                wsreset : wsreset
+            })                
 
         } else {
-            res.status(400).json({"error":"Module Registration Id not found"});
+            res.status(400).json({"error":"Necessary data is missing"});
         }
 
     } else {
