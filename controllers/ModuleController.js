@@ -15,7 +15,7 @@ const { Op } = require('sequelize');
 * @param {*} req  
 */
 
-const tokenize = (req, res) => {
+const unwrapToken = (req, res) => {
 
     if (req.token) {
 
@@ -38,8 +38,7 @@ const tokenize = (req, res) => {
                     wstype : wstype,
                     wsid : wsid,
                     wsreset : wsreset
-                })
-                
+                })                
 
             } else {
                 res.status(400).json({"error":"Necessary data is missing"});
@@ -1064,4 +1063,4 @@ async function getModuleWorkSessions(module_id) {
     return workSessions;
 };
 
-module.exports = { tokenize, getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, initWorkSession, resetWorkSession };
+module.exports = { unwrapToken, getWorkSessionType, getWorkSessionInfo, getWorkSession, setWorkSessionActivityResponse, getWorkSessionStatistics, initWorkSession, resetWorkSession };
