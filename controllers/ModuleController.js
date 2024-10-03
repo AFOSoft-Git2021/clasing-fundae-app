@@ -801,7 +801,7 @@ const initWorkSession = (req, res) => {
             }
         } else {
             res.status(400).json({
-                error: "Work session type not found"
+                error: "Work session type not found: " + workSessionType
             })
         }
             
