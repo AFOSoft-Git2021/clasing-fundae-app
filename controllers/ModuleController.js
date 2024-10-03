@@ -98,7 +98,7 @@ const getWorkSessionInfo = (req, res) => {
 
     if (req.token) {
 
-        const workSessionType = req.token.worksession_type;
+        const workSessionType = req.token.wstype;
         if (workSessionType && (workSessionType == 0 || workSessionType == 5)) {
 
             const workSessionId = req.params.id;
