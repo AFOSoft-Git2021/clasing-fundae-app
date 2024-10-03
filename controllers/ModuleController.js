@@ -54,15 +54,7 @@ const unwrapToken = (req, res) => {
 
 const getWorkSessionType = (req, res) => {
 
-    res.status(200).json({
-        status: "ok",
-        code: 200,
-        message: "Work Session Type recovered successfully"
-    })
-
-    /*if (req.token) {
-
-        
+    if (req.token) {
 
         const workSessionId = req.token.worksession_id;
         const workSessionType = req.token.worksession_type;
@@ -99,7 +91,7 @@ const getWorkSessionType = (req, res) => {
         res.status(400).json({
             error: "JWT must be provided"
         })
-    }*/
+    }
 }
 
 const getWorkSessionInfo = (req, res) => {
