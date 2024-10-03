@@ -2,6 +2,7 @@ const Registration = require("../models/Registration");
 const FundaeTeacher = require("../models/FundaeTeacher");
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
+const RegistrationModuleExamActivity = require("../models/RegistrationModuleExamActivity");
 const RegistrationModuleFile = require("../models/RegistrationModuleFile");
 const RegistrationExamActivity = require("../models/RegistrationExamActivity");
 const File = require("../models/File");
@@ -13,6 +14,42 @@ const jwt = require("jsonwebtoken");
 * @param {*} req  
 */
 
+const wrapToken = (req, res) => {
+
+    if (req.token) {
+
+        if (
+            req.body.wstype && 
+            req.body.wsid && 
+            req.body.wsreset
+        ) {
+            
+            const wstype = req.body.wstype;                
+            const wsid = req.body.wsid;
+            const wsreset = req.body.wsreset;
+
+            const token = jwt.sign({user_id: req.token.user_id, wstype:wstype, wsid:wsid, wsreset:wsreset},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+            res.status(200).json({
+                status: "ok",
+                code: 200,
+                message: "Token wrapped succesfully.",
+                //user: newUser,
+                jwt: token
+            })
+
+        } else {
+            res.status(400).json({"error":"Necessary data is missing"});
+        }
+
+    } else {
+        res.status(400).json({
+            error: "JWT must be provided"
+        })
+    }
+}
+
+
+// Este end-point, finalmente, no se usa.
 const untokenize = (req, res) => {
 
     if (req.token) {
@@ -94,14 +131,15 @@ const getItem = (req, res) => {
 
                         let registrationExamActivitiesNum = 0;
                         let examActivityinUse = 0;
+                        let examActivitiesNotAnswered = 0;
                         const registrationExamActivities = await getRegistrationExamActivities(userRegistration.id);
                         registrationExamActivitiesNum += registrationExamActivities.length;
                         for (let i=0; i<registrationExamActivities.length;i++) {
                             if (registrationExamActivities[i].result == 0) {
-                                examActivityinUse = registrationExamActivities[i].order;
-                                break;
+                                examActivitiesNotAnswered++;                                
                             }
                         };
+                        examActivityinUse = (registrationExamActivities.length - examActivitiesNotAnswered) + 1;
 
                         const teacher = await getRegistrationTeacher(userRegistration.teacher_id);
                         if (teacher.length == 1) {
@@ -198,6 +236,38 @@ const getItem = (req, res) => {
                                         if (registrationModule[0].score > 0) {
                                             moduleObj.work_session_passed = (correctActivities >= (registrationModuleActivities.length * (registrationModule[0].threshold / 100))) ? 1 : 0;
                                         }
+
+                                        // ****
+
+                                        const registrationModuleExamActivities = await getRegistrationModuleExamActivities(registrationModule[0].id);
+                                        moduleObj.num_exam_activities = registrationModuleExamActivities.length;
+
+                                        let correctExamActivities = 0;
+                                        let incorrectExamActivities = 0;
+                                        if (registrationModule[0].status > 1) {
+                                            
+                                            registrationModuleExamActivities.forEach (activity => {
+                                                
+                                                if (activity.result == 1) {
+                                                    correctExamActivities++;
+                                                } else {
+                                                    if (activity.result == 2) {
+                                                        incorrectExamActivities++;
+                                                    }    
+                                                }
+                                            })
+                                        }
+
+                                        moduleObj.num_exam_activities_correct = correctExamActivities;
+                                        moduleObj.num_exam_activities_incorrect = incorrectExamActivities;
+                                        moduleObj.num_exam_activities_still_unanswered = moduleObj.num_exam_activities - (incorrectExamActivities + correctExamActivities);
+
+                                        moduleObj.exam_passed = 0;
+                                        if (registrationModule[0].score_exam > 0) {
+                                            moduleObj.exam_passed = (correctExamActivities >= (registrationModuleExamActivities.length * (registrationModule[0].threshold_exam / 100))) ? 1 : 0;
+                                        }
+
+                                        // ****
                                         
                                         const registrationModuleFiles = await getRegistrationModuleFiles(registrationModule[0].id);
                                         const numPills = registrationModuleFiles.length;
@@ -455,6 +525,17 @@ async function getRegistrationModuleActivities(module_id) {
     return moduleActivities;
 }
 
+async function getRegistrationModuleExamActivities(module_id) {
+    const moduleActivities = await RegistrationModuleExamActivity.findAll({
+        attributes: ['id','result'],
+        where: {
+            module_id
+        }
+    });
+
+    return moduleActivities;
+}
+
 async function getRegistrationModuleFiles (module_id) {
     const moduleFiles = await RegistrationModuleFile.findAll({
         attributes: ['id','name','viewed'],
@@ -477,4 +558,4 @@ async function getRegistrationExamActivities(registration_id) {
     return mexamctivities;
 }
 
-module.exports = { untokenize, getItems, getItem, getTeacherDetails };
+module.exports = { wrapToken, untokenize, getItems, getItem, getTeacherDetails };

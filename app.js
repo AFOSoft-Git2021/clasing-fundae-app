@@ -22,8 +22,18 @@ app.use('/api/modules',moduleRegistration);
 app.use('/api/exam',examRegistration);
 app.use('/api/auth',auth);
 app.use('/api',public);
+app.use("/health",(req,res)=>{
+    res.json({status: "UP"})
+});
 
-const port = process.env.PORT;
+app.use("/text",(req,res)=>{
+    fetch("https://staging-ariadne-back-storage.infrastructure.clasingelts.com/public/activities/texts/TSC_A1_20_3.html")
+    .then(response => response.text())
+    .then(text => res.json(text))
+});
+
+
+const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
     console.log (`API Clasing Fundae works correctly in port ${port}`)

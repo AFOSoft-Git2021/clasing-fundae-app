@@ -237,10 +237,29 @@ const getExam = (req, res) => {
 
                                                     // read file asynchronously
                                                     //html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
-                                                    html = await fs.readFile(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html", "utf8");
-                                                            
-                                                    newActivity.text = html;
-                                                    activitiesArray.push(newActivity);
+                                                    //html = await fs.readFile(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html", "utf8");
+                                                    //html = await fetch(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html");   
+                                                    
+                                                    //newActivity.text = html;
+                                                    //activitiesArray.push(newActivity);
+
+                                                    // ****
+
+                                                    await fetch(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html")
+                                                    .then(async response => await response.text())
+                                                    .then(html => {
+
+                                                        const html1 = html.split("<h3")[0];
+                                                        const html2 = html.split("h3>")[1];
+
+                                                        newActivity.text = html1 + html2;
+                                                        activitiesArray.push(newActivity);
+                                                    })
+                                                    .catch(error => {
+                                                        res.status(400).json({
+                                                            error: error
+                                                        })
+                                                    })
                                                 
                                                 } else {
                                                     activitiesArray.push(newActivity);

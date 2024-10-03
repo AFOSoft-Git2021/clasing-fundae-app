@@ -1,6 +1,8 @@
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
+const RegistrationModuleExamActivity = require("../models/RegistrationModuleExamActivity");
 const RegistrationModuleWorkSession = require("../models/RegistrationModuleWorkSession");
+const RegistrationModuleExamWorkSession = require("../models/RegistrationModuleExamWorkSession");
 const Activity = require("../models/Activity");
 const ActivityFormat = require("../models/ActivityFormat");
 const ActivityQuestion = require("../models/ActivityQuestion");
@@ -19,11 +21,11 @@ const unwrapToken = (req, res) => {
 
     if (req.token) {
 
-        if (
+        /*if (
             req.token.wstype && 
             req.token.wsid && 
             req.token.wsreset 
-        ) {
+        ) {*/
             
             const wstype = req.token.wstype;                
             const wsid = req.token.wsid;
@@ -38,9 +40,9 @@ const unwrapToken = (req, res) => {
                 wsreset : wsreset
             })                
 
-        } else {
-            res.status(400).json({"error":"Necessary data is missing"});
-        }
+        /*}else {
+            res.status(400).json({error:req.token});
+        } */
 
     } else {
         res.status(400).json({
@@ -56,7 +58,7 @@ const getWorkSessionType = (req, res) => {
 
         const workSessionId = req.token.worksession_id;
         const workSessionType = req.token.worksession_type;
-        if (workSessionType == 0) {
+        if (workSessionType == 0 || workSessionType == 5) {
 
             const registrationModule = getRegistrationModule(workSessionId);
             registrationModule
@@ -96,53 +98,62 @@ const getWorkSessionInfo = (req, res) => {
 
     if (req.token) {
 
-        const workSessionId = req.params.id;
+        const workSessionType = req.token.worksession_type;
+        if (workSessionType && (workSessionType == 0 || workSessionType == 5)) {
 
-        if (workSessionId) {
+            const workSessionId = req.params.id;
 
-            let workSessionInfo = new Object();
+            if (workSessionId) {
 
-            const registrationModule = getRegistrationModule(workSessionId);
-            registrationModule
-            .then(registrationModule => {
+                let workSessionInfo = new Object();
 
-                workSessionInfo.name = registrationModule[0].name;
-                workSessionInfo.threshold = registrationModule[0].threshold;
+                const registrationModule = getRegistrationModule(workSessionId);
+                registrationModule
+                .then(registrationModule => {
 
-                const activities = getRegistrationModuleActivities(workSessionId);
-                return activities;
-            })
-            .then(activities => {
+                    workSessionInfo.name = registrationModule[0].name;
+                    workSessionInfo.threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold_exam;
 
-                workSessionInfo.num_activities = activities.length;
-                let workSessionInitiated = false;
-                activities.forEach (activity => {
-                    if (activity.result > 0) {
-                        workSessionInitiated = true;
-                    }
-                }); 
-
-                workSessionInfo.status = workSessionInitiated ? 1 : 0;
-
-                const token = jwt.sign({user_id: req.token.user_id, worksession_type:0, worksession_id:workSessionId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
-
-                res.status(200).json({
-                    status: "ok",
-                    code: 200,
-                    message: "Work Session Info recovered successfully",
-                    work_session_info: workSessionInfo,
-                    jwt: token
+                    const activities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
+                    return activities;
                 })
-            })
-            .catch(error => {
+                .then(activities => {
+
+                    workSessionInfo.num_activities = activities.length;
+                    let workSessionInitiated = false;
+                    activities.forEach (activity => {
+                        if (activity.result > 0) {
+                            workSessionInitiated = true;
+                        }
+                    }); 
+
+                    workSessionInfo.status = workSessionInitiated ? 1 : 0;
+
+                    const token = jwt.sign({user_id: req.token.user_id, worksession_type:workSessionType, worksession_id:workSessionId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+
+                    res.status(200).json({
+                        status: "ok",
+                        code: 200,
+                        message: (workSessionType == 0) ? "Work Session Info recovered successfully" : "Module Exam Info recovered successfully",
+                        work_session_info: workSessionInfo,
+                        jwt: token
+                    })
+                })
+                .catch(error => {
+                    res.status(400).json({
+                        error: "Work Session data error"
+                    })
+                })
+
+            } else {
                 res.status(400).json({
-                    error: "Work Session data error"
+                    error: "Param data not found"
                 })
-            })
+            }
 
         } else {
             res.status(400).json({
-                error: "Param data not found"
+                error: "Work session type not found"
             })
         }
             
@@ -159,15 +170,19 @@ const getWorkSession = (req, res) => {
     if (req.token) {
 
         const workSessionId = req.token.worksession_id;
+        const workSessionType = req.token.worksession_type;
 
-        if (workSessionId) {            
+        if (workSessionId && workSessionType && (workSessionType == 0 || workSessionType == 5)) {            
             
             let numActivities = 0;
-            const moduleActivities = getRegistrationModuleActivities(workSessionId);
+            const moduleActivities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
             moduleActivities    
                 .then(async moduleActivities => {   
 
                     console.log("START");
+
+                    //Ordenamos el array manualmente por QUE NO ME FUNCIONA EL SORT SEQUELIZE
+                    //moduleActivities.sort((a, b) => parseInt(a.order) - parseInt(b.order));
 
                     let activitiesArray = [];
 
@@ -310,10 +325,37 @@ const getWorkSession = (req, res) => {
 
                                                     // read file asynchronously
                                                     //html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
-                                                    html = await fs.readFile(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html", "utf8");  
+                                                    //html = await fs.readFile(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html", "utf8");  
+                                                    //html = await fetch(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html");
+
+
                                                     
-                                                    newActivity.text = html;
-                                                    activitiesArray.push(newActivity);
+                                                    // *****
+
+                                                    
+
+                                                    await fetch(process.env.CLASING_STORAGE + "texts/" + activityQuestion.text + ".html")
+                                                    .then(async response => await response.text())
+                                                    .then(html => {
+
+                                                        const html1 = html.split("<h3")[0];
+                                                        const html2 = html.split("h3>")[1];
+
+                                                        newActivity.text = html1 + html2;
+                                                        activitiesArray.push(newActivity);
+                                                    })
+                                                    .catch(error => {
+                                                        res.status(400).json({
+                                                            error: error
+                                                        })
+                                                    })
+
+                                                    // *******
+                                                    //activitiesArray.push(newActivity);
+
+                                                   
+
+                                                    
                                                 
                                                 } else {
                                                     activitiesArray.push(newActivity);
@@ -430,6 +472,7 @@ const getWorkSession_BAK = (req, res) => {
 
                                                         // read file asynchronously
                                                         html = await fs.readFile("./storage/texts/" + activityQuestion.text + ".html", "utf8");
+                                                        
                                                                 
                                                         newActivity.text = html;
                                                         activitiesArray.push(newActivity);
@@ -538,7 +581,7 @@ const setWorkSessionActivityResponse = (req, res) => {
 
     if (req.token) {
 
-        if (req.token.worksession_id) {
+        if (req.token.worksession_id && req.token.worksession_type && (req.token.worksession_type == 0 || req.token.worksession_type == 5)) {
 
             if (
                 req.body.id && 
@@ -553,7 +596,9 @@ const setWorkSessionActivityResponse = (req, res) => {
                 const skillId = req.body.skill_id;
                 const order = req.body.order;
 
-                const activityResponse = setActivityResponse(id, result, skillId);
+                const workSessionType = req.token.worksession_type;
+
+                const activityResponse = (workSessionType == 0) ? setActivityResponse(id, result, skillId) : setExamActivityResponse(id, result, skillId);
                 activityResponse
                 .then (async _ => {
 
@@ -585,10 +630,11 @@ const setWorkSessionActivityResponse = (req, res) => {
 const getWorkSessionStatistics = (req, res) => {
 
     if (req.token) {
-
-        if (req.token.worksession_id) {
+        
+        if (req.token.worksession_id && req.token.worksession_type && (req.token.worksession_type == 0 || req.token.worksession_type == 5)) {
 
             const workSessionId = req.token.worksession_id;
+            const workSessionType = req.token.worksession_type;
 
             console.log("START");
 
@@ -596,7 +642,7 @@ const getWorkSessionStatistics = (req, res) => {
             registrationModule
             .then (registrationModule => {
 
-                const moduleWorkSessions = getModuleWorkSessions(workSessionId);
+                const moduleWorkSessions = (workSessionType == 0) ? getModuleWorkSessions(workSessionId) : getModuleExamWorkSessions(workSessionId);
                 moduleWorkSessions
                 .then (moduleWorkSessions => { 
             
@@ -615,7 +661,7 @@ const getWorkSessionStatistics = (req, res) => {
                             skillsArray.push(skillObject);
                         });
 
-                        const activities = getRegistrationModuleActivities(workSessionId);
+                        const activities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
                         activities
                         .then (activities => {
 
@@ -652,7 +698,7 @@ const getWorkSessionStatistics = (req, res) => {
                             const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
 
                             // Update module score
-                            const updatedRegistrationModule = updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber);
+                            const updatedRegistrationModule = (workSessionType == 0) ? updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber) : updateRegistrationExamModuleScore(workSessionId, activitiesCorrectNumber);
                             updatedRegistrationModule
                             .then (_ => {
 
@@ -666,7 +712,7 @@ const getWorkSessionStatistics = (req, res) => {
                                 };
 
                                 // Saving Work Session info
-                                const registrationModuleWorkSession = setModuleWorkSession(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics));
+                                const registrationModuleWorkSession = (workSessionType == 0) ? setModuleWorkSession(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics)) : setModuleExamn(workSessionId, activitiesCorrectNumber, JSON.stringify(statistics));
                                 registrationModuleWorkSession
                                 .then (_ => {
 
@@ -696,7 +742,7 @@ const getWorkSessionStatistics = (req, res) => {
                     })
                 })
                 .catch (error => {
-                    res.status(400).json({"error":"Error recovering works essions attempts"});
+                    res.status(400).json({"error":"Error recovering works sessions attempts"});
                 })
             })
             .catch (error => {
@@ -718,29 +764,44 @@ const initWorkSession = (req, res) => {
 
     if (req.token) {
 
-        const workSessionId = req.token.worksession_id;
+        const workSessionType = req.token.worksession_type;
+        if (workSessionType && (workSessionType == 0 || workSessionType == 5)) {
 
-        if (workSessionId) {
+            if (req.params.id)  {
 
-            console.log("START");
+                const workSessionId = req.params.id;
 
-            const registrationModuleActivities =  updateRegistrationModuleStatusAndScore(workSessionId, 2);
-            if (registrationModuleActivities) {
+                if (workSessionId) {
 
-                res.status(200).json({
-                    status: "ok",
-                    code: 200,
-                    message: "Module status initiated successfully"
-                })
+                    console.log("START");
 
-                console.log("END");
+                    const registrationModuleActivities =  (workSessionType == 0) ? updateRegistrationModuleStatusAndScore(workSessionId, 2) : updateRegistrationModuleExamStatusAndScore(workSessionId, 2);
+                    if (registrationModuleActivities) {
+
+                        res.status(200).json({
+                            status: "ok",
+                            code: 200,
+                            message: "Module status initiated successfully"
+                        })
+
+                        console.log("END");
+                    } else {
+                        res.status(400).json({"error":"Error changing module status"});
+                    }
+
+                } else {
+                    res.status(400).json({
+                        error: "Work Session Id not found"
+                    })
+                }
             } else {
-                res.status(400).json({"error":"Error changing module status"});
+                res.status(400).json({
+                    error: "Neccesary Data not found"
+                })
             }
-
         } else {
             res.status(400).json({
-                error: "JWT not contains WorkSession Data"
+                error: "Work session type not found"
             })
         }
             
@@ -756,50 +817,59 @@ const resetWorkSession = (req, res) => {
 
     if (req.token) {
 
-        if (req.params.id)  {
+        const workSessionType = req.token.worksession_type;
+        if (workSessionType && (workSessionType == 0 || workSessionType == 5)) {
 
-            let workSessionId = 0;
+            if (req.params.id)  {
 
-            if (parseInt(req.params.id) > 0)  {
-                workSessionId = req.params.id;
-            } else {
-                workSessionId = req.token.worksession_id;
-            }
+                let workSessionId = 0;
 
-            if (workSessionId) {
+                if (parseInt(req.params.id) > 0)  {
+                    workSessionId = req.params.id;
+                } else {
+                    workSessionId = req.token.worksession_id;
+                }
 
-                console.log("START");
+                if (workSessionId) {
 
-                const registrationModule = InitializeRegistrationModuleActivities(workSessionId)
-                .then(async _ => {
+                    console.log("START");
 
-                    const registrationModuleActivities = await updateRegistrationModuleStatusAndScore(workSessionId, 2);
-                    if (registrationModuleActivities) {
+                    const registrationModule = (workSessionType == 0) ? InitializeRegistrationModuleActivities(workSessionId) : InitializeRegistrationModuleExamActivities(workSessionId)
+                    .then(async _ => {
 
-                        res.status(200).json({
-                            status: "ok",
-                            code: 200,
-                            message: "Work Session and module status reset successfully"
-                        })
+                        const registrationModuleActivities = (workSessionType == 0) ? await updateRegistrationModuleStatusAndScore(workSessionId, 2) : await updateRegistrationModuleExamStatusAndScore(workSessionId, 2);
+                        if (registrationModuleActivities) {
 
-                        console.log("END");
-                    } else {
-                        res.status(400).json({"error":"Error changing module status"});
-                    }
+                            res.status(200).json({
+                                status: "ok",
+                                code: 200,
+                                message: "Work Session and module status reset successfully"
+                            })
 
-                })
-                .catch (error => {
-                    res.status(400).json({"error":"Error recovering works essions attempts"});
-                })
+                            console.log("END");
+                        } else {
+                            res.status(400).json({"error":"Error changing module status"});
+                        }
 
+                    })
+                    .catch (error => {
+                        res.status(400).json({"error":"Error recovering works essions attempts"});
+                    })
+
+                } else {
+                    res.status(400).json({
+                        error: "JWT not contains WorkSession Data"
+                    })
+                }
             } else {
                 res.status(400).json({
-                    error: "JWT not contains WorkSession Data"
+                    error: "Neccesary Data not founf"
                 })
             }
+
         } else {
             res.status(400).json({
-                error: "Neccesary Data not founf"
+                error: "Work session type not found"
             })
         }
             
@@ -813,7 +883,7 @@ const resetWorkSession = (req, res) => {
 
 async function getRegistrationModule(id) {
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','name','threshold','order','status','score'],
+        attributes: ['id','name','threshold','threshold_exam','order','status','score','score_exam'],
         where: {
             id
         }
@@ -849,6 +919,22 @@ async function getActivityFormat(id) {
 async function getRegistrationModuleActivities(module_id) {
 
     const activities = await RegistrationModuleActivity.findAll({
+        attributes: ['id','result','in_use','order','skill_id','activity_id'],
+        where: {
+            module_id
+        },
+        order: [
+            ['order', 'ASC']
+        ],
+        
+    });
+
+    return activities;
+}
+
+async function getRegistrationModuleExamActivities(module_id) {
+
+    const activities = await RegistrationModuleExamActivity.findAll({
         attributes: ['id','result','in_use','order','skill_id','activity_id'],
         where: {
             module_id
@@ -898,6 +984,26 @@ async function setActivityResponse(id, result, skill_id) {
     };
 
     const ativityResponse = await RegistrationModuleActivity.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return ativityResponse;
+};
+
+async function setExamActivityResponse(id, result, skill_id) {
+    const jsonData = {        
+        result,
+        in_use: 1,
+        skill_id
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const ativityResponse = await RegistrationModuleExamActivity.update(
         jsonData,
         {
             where: jsonWhere
@@ -995,11 +1101,54 @@ async function InitializeRegistrationModuleActivities(module_id) {
     return registrationModuleActivities;
 }
 
+async function InitializeRegistrationModuleExamActivities(module_id) {
+
+    const jsonData = {                
+        result: 0,
+        skill_id: 1,
+        in_use: 0
+    };
+
+    const jsonWhere = {        
+        module_id,
+        //order: {[DataTypes.gt]:1} //order > 1
+    };
+
+    const registrationModuleActivities = await RegistrationModuleExamActivity.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+
+    return registrationModuleActivities;
+}
+
 async function updateRegistrationModuleStatusAndScore(id, status) {
 
     const jsonData = {        
         status,
         score: 0
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModule.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+};
+
+async function updateRegistrationModuleExamStatusAndScore(id, status) {
+
+    const jsonData = {        
+        status,
+        score_exam: 0
     };
 
     const jsonWhere = {        
@@ -1035,6 +1184,25 @@ async function updateRegistrationModuleScoreAndSetCompeted(id, score) {
     return moduleResponse;
 };
 
+async function updateRegistrationExamModuleScore(id, score_exam) {
+
+    const jsonData = {        
+        score_exam
+    };
+
+    const jsonWhere = {        
+        id
+    };
+
+    const moduleResponse = await RegistrationModule.update(
+        jsonData,
+        {
+            where: jsonWhere
+        }
+    );
+    return moduleResponse;
+};
+
 async function setModuleWorkSession(module_id, score, json_data) {
     const jsonData = { 
         score,       
@@ -1046,8 +1214,30 @@ async function setModuleWorkSession(module_id, score, json_data) {
     return registrationModuleWorkSession;
 };
 
+async function setModuleExamn(module_id, score, json_data) {
+    const jsonData = { 
+        score,       
+        json_data,
+        module_id
+    };
+
+    const registrationModuleWorkSession = await RegistrationModuleExamWorkSession.create(jsonData);
+    return registrationModuleWorkSession;
+};
+
 async function getModuleWorkSessions(module_id) {
     const workSessions = await RegistrationModuleWorkSession.findAll({
+        attributes: ['id'],
+        where: {
+            module_id
+        }
+    });
+
+    return workSessions;
+};
+
+async function getModuleExamWorkSessions(module_id) {
+    const workSessions = await RegistrationModuleExamWorkSession.findAll({
         attributes: ['id'],
         where: {
             module_id

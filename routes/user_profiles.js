@@ -10,6 +10,7 @@ const FundaeCourseExamActivity = require("../models/FundaeCourseExamActivity");
 const Registration = require("../models/Registration");
 const RegistrationModule = require("../models/RegistrationModule");
 const RegistrationModuleActivity = require("../models/RegistrationModuleActivity");
+const RegistrationModuleExamActivity = require("../models/RegistrationModuleExamActivity");
 const RegistrationModuleFile = require("../models/RegistrationModuleFile");
 const RegistrationExamActivity = require("../models/RegistrationExamActivity");
 const File = require("../models/File");
@@ -96,7 +97,8 @@ route.post ('/login', (req, res) => {
                                 const activitiesFundaeCourse = await getFundaeCourseModuleActivities(module.id);
                                 if (activitiesFundaeCourse.length > 0) {
                                     promises1 = activitiesFundaeCourse.map(async activity => {
-                                        const newCourseModuleActivity = await setRegistrationModuleActivity(newCourseModule.id, activity.activity_id, activity.order);
+                                        
+                                        const newCourseModuleActivity = (parseInt(activity.type) == 0) ? await setRegistrationModuleActivity(newCourseModule.id, activity.activity_id, activity.order) : await setRegistrationModuleExamActivity(newCourseModule.id, activity.activity_id, activity.order);
                                         return newCourseModuleActivity;
                                     })
                                 }   
@@ -147,12 +149,12 @@ route.post ('/login', (req, res) => {
                                 }
                             })
                             .then ( _ => {
-                                //const token = jwt.sign({user_id: userId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
-                                const token = jwt.sign({user_id: userId, wstype:'0', wsid:'1666', wsreset:'0'},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+                                const token = jwt.sign({user_id: userId},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
+                                //const token = jwt.sign({user_id: userId, wstype:1, wsid:209, wsreset:0},process.env.JWT_KEY, { expiresIn: 60 * 60 * 24 });
                                 res.status(200).json({
                                     status: "ok",
                                     code: 200,
-                                    message: "User Registered and logged",
+                                    message: "User Registered and logged succesfully.",
                                     //user: newUser,
                                     jwt: token
                                 })
@@ -347,7 +349,7 @@ function returnJsonError (errorMessage) {
 
 async function getFundaeCourseModuleActivities(module_id) {
     const activitiesFundaeCourseModule = await FundaeCourseModuleActivity.findAll({
-        attributes: ['order','activity_id'],
+        attributes: ['type','order','activity_id'],
         where: {
             module_id
         }
@@ -365,6 +367,17 @@ async function setRegistrationModuleActivity(module_id, activity_id, order) {
 
     const registrationModuleActivity = await RegistrationModuleActivity.create(jsonData);
     return registrationModuleActivity;
+};
+
+async function setRegistrationModuleExamActivity(module_id, activity_id, order) {
+    const jsonData = {        
+        order,
+        activity_id,
+        module_id
+    };
+
+    const registrationModulExamActivity = await RegistrationModuleExamActivity.create(jsonData);
+    return registrationModulExamActivity;
 };
 
 async function getFundaeCourseModuleFiles(module_id) {
