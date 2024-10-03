@@ -54,16 +54,17 @@ const unwrapToken = (req, res) => {
 
 const getWorkSessionType = (req, res) => {
 
-    if (req.token) {
+    res.status(200).json({
+        status: "ok",
+        code: 200,
+        message: "Work Session Type recovered successfully"
+    })
 
-        res.status(200).json({
-            status: "ok",
-            code: 200,
-            message: "Work Session Type recovered successfully",
-            worksession_type: req.token.worksession_type
-        })
+    /*if (req.token) {
 
-        /*const workSessionId = req.token.worksession_id;
+        
+
+        const workSessionId = req.token.worksession_id;
         const workSessionType = req.token.worksession_type;
         if (workSessionType == 0 || workSessionType == 5) {
 
@@ -92,13 +93,13 @@ const getWorkSessionType = (req, res) => {
                 worksession_type: workSessionType,
                 module_name: ""
             })
-        }*/
+        }
 
     } else {
         res.status(400).json({
             error: "JWT must be provided"
         })
-    }
+    }*/
 }
 
 const getWorkSessionInfo = (req, res) => {
