@@ -112,7 +112,7 @@ const getWorkSessionInfo = (req, res) => {
                 .then(registrationModule => {
 
                     workSessionInfo.name = registrationModule[0].name;
-                    workSessionInfo.threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold_exam;
+                    workSessionInfo.threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold;
 
                     const activities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
                     return activities;
