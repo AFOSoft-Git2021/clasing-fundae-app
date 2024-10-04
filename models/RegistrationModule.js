@@ -20,10 +20,6 @@ const RegistrationModule = sequelize.define  (
             type: DataTypes.TINYINT,
             allowNull: false
         },
-        threshold_exam: {
-            type: DataTypes.TINYINT,
-            allowNull: false
-        },
         order: {
             type: DataTypes.SMALLINT,
             defaultValue: 0
@@ -33,10 +29,6 @@ const RegistrationModule = sequelize.define  (
             defaultValue: 0
         },
         score: {
-            type: DataTypes.TINYINT,
-            defaultValue: 0
-        },
-        score_exam: {
             type: DataTypes.TINYINT,
             defaultValue: 0
         },
