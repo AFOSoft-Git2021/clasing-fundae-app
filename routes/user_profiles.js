@@ -331,6 +331,7 @@ async function setRegistrationModule(courseModule, registrationId) {
         name: courseModule.name,
         description: courseModule.description,
         threshold: courseModule.threshold,
+        threshold_exam: courseModule.threshold_exam,
         order: courseModule.order,
         registration_id: registrationId
     };
