@@ -111,12 +111,15 @@ const getWorkSessionInfo = (req, res) => {
                 registrationModule
                 .then(registrationModule => {
 
-                    res.status(200).json({
-                        statis: "ok"
-                    })
+                    
 
                     workSessionInfo.name = registrationModule[0].name;
                     workSessionInfo.threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold_exam;
+
+                    res.status(200).json({
+                        status: "ok",
+                        threshold: workSessionInfo.threshold
+                    })
 
                     const activities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
                     return activities;
