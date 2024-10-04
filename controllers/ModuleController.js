@@ -116,10 +116,7 @@ const getWorkSessionInfo = (req, res) => {
                     workSessionInfo.name = registrationModule[0].name;
                     workSessionInfo.threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold_exam;
 
-                    res.status(200).json({
-                        status: "ok",
-                        threshold: workSessionInfo.threshold
-                    })
+    
 
                     const activities = (workSessionType == 0) ? getRegistrationModuleActivities(workSessionId) : getRegistrationModuleExamActivities(workSessionId);
                     return activities;
@@ -148,7 +145,7 @@ const getWorkSessionInfo = (req, res) => {
                 })
                 .catch(error => {
                     res.status(400).json({
-                        error: "Work Session data error"
+                        error: error //"Work Session data error"
                     })
                 })
 
