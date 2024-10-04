@@ -316,7 +316,7 @@ async function setRegistration(name, description, threshold,user_id, course_id, 
 async function getFundaeCourseModules(course_id) {
 
     const fundaeCourseModule = await FundaeCourseModule.findAll({
-        attributes: ['id','name','description','threshold','order'],
+        attributes: ['id','name','description','threshold','threshold_exam','order'],
         where: {
             course_id
         }

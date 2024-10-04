@@ -20,6 +20,10 @@ const FundaeCourseModule = sequelize.define  (
             type: DataTypes.TINYINT,
             allowNull: false
         },
+        threshold_exam: {
+            type: DataTypes.TINYINT,
+            allowNull: false
+        },
         order: {
             type: DataTypes.SMALLINT,
             defaultValue: 0
