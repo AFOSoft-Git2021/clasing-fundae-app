@@ -833,11 +833,11 @@ const resetWorkSession = (req, res) => {
 
                 if (workSessionId) {
 
-                    const registrationModule = (workSessionType == 0) ? InitializeRegistrationModuleActivities(workSessionId) : InitializeRegistrationModuleExamActivities(workSessionId)
-                    .then(async _ => {
+                    const registrationModule = (workSessionType == 0) ? InitializeRegistrationModuleActivities(workSessionId) : InitializeRegistrationModuleExamActivities(workSessionId);
+                    registrationModule.then(async _ => {
                         
-                        //const registrationModuleActivities = (workSessionType == 0) ? await updateRegistrationModuleStatusAndScore(workSessionId, 2) : await updateRegistrationModuleExamStatusAndScore(workSessionId, 2);
-                        //if (registrationModuleActivities) {
+                        const registrationModuleActivities = (workSessionType == 0) ? await updateRegistrationModuleStatusAndScore(workSessionId, 2) : await updateRegistrationModuleExamStatusAndScore(workSessionId, 2);
+                        if (registrationModuleActivities) {
 
                             res.status(200).json({
                                 status: "ok",
@@ -846,9 +846,9 @@ const resetWorkSession = (req, res) => {
                             })
 
                             console.log("END");
-                        //} else {
-                        //    res.status(400).json({"error":"Error changing module status"});
-                        //}
+                        } else {
+                            res.status(400).json({"error":"Error changing module status"});
+                        }
 
                     })
                     .catch (error => {
