@@ -833,19 +833,9 @@ const resetWorkSession = (req, res) => {
 
                 if (workSessionId) {
 
-                    console.log("START");
-                    res.status(200).json({
-                        status: "ok",
-                        code: 200,
-                        message: "Work Session and module status reset successfully",
-                        wsid: workSessionId
-                    })
-
-                    /*const registrationModule = (workSessionType == 0) ? InitializeRegistrationModuleActivities(workSessionId) : InitializeRegistrationModuleExamActivities(workSessionId)
+                    const registrationModule = (workSessionType == 0) ? InitializeRegistrationModuleActivities(workSessionId) : InitializeRegistrationModuleExamActivities(workSessionId)
                     .then(async _ => {
-
                         
-
                         const registrationModuleActivities = (workSessionType == 0) ? await updateRegistrationModuleStatusAndScore(workSessionId, 2) : await updateRegistrationModuleExamStatusAndScore(workSessionId, 2);
                         if (registrationModuleActivities) {
 
@@ -864,7 +854,6 @@ const resetWorkSession = (req, res) => {
                     .catch (error => {
                         res.status(400).json({"error":"Error recovering works essions attempts"});
                     })
-                    */
 
                 } else {
                     res.status(400).json({
@@ -1097,7 +1086,7 @@ async function InitializeRegistrationModuleActivities(module_id) {
     };
 
     const jsonWhere = {        
-        module_id,
+        module_id
         //order: {[DataTypes.gt]:1} //order > 1
     };
 
