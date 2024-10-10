@@ -244,7 +244,7 @@ const getItem = (req, res) => {
 
                                         let correctExamActivities = 0;
                                         let incorrectExamActivities = 0;
-                                        if (registrationModule[0].status > 1) {
+                                        //if (registrationModule[0].status > 1) {
                                             
                                             registrationModuleExamActivities.forEach (activity => {
                                                 
@@ -256,7 +256,7 @@ const getItem = (req, res) => {
                                                     }    
                                                 }
                                             })
-                                        }
+                                        //}
 
                                         moduleObj.num_exam_activities_correct = correctExamActivities;
                                         moduleObj.num_exam_activities_incorrect = incorrectExamActivities;
