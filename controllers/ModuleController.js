@@ -818,7 +818,7 @@ const resetWorkSession = (req, res) => {
     if (req.token) {
 
         //const workSessionType = req.token.worksession_type;
-        const workSessionType = req.token.wstype;
+        const workSessionType = (req.token.wstype) ? req.token.wstype : req.token.worksession_type;
         if (workSessionType && (workSessionType == 0 || workSessionType == 5)) {
 
             if (req.params.id)  {
