@@ -828,7 +828,7 @@ const resetWorkSession = (req, res) => {
                 if (parseInt(req.params.id) > 0)  {
                     workSessionId = req.params.id;
                 } else {
-                    workSessionId = req.token.wsid;
+                    workSessionId = (req.token.wsid) ? req.token.wsid : req.token.worksession_id;
                 }
 
                 if (workSessionId) {
