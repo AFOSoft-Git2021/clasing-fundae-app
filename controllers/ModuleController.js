@@ -686,7 +686,7 @@ const getWorkSessionStatistics = (req, res) => {
                             });
 
                             const workSessionNumActivities = activitiesCorrectNumber + activitiesIncorrectNumber;
-                            const threshold = registrationModule[0].threshold;
+                            const threshold = (workSessionType == 0) ? registrationModule[0].threshold : registrationModule[0].threshold_exam;
                             const moduleName = registrationModule[0].name;
 
                             for (let skill of skillsArray) {
