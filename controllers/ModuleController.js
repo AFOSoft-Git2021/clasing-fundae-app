@@ -889,7 +889,7 @@ const resetWorkSession = (req, res) => {
 
 async function getRegistrationModule(id) {
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','name','threshold','threshold_exam','order','status','score','score_exam'],
+        attributes: ['id','name','threshold','threshold_exam','order','status','score','score_exam','work_session_completed','module_exam_completed'],
         where: {
             id
         }
