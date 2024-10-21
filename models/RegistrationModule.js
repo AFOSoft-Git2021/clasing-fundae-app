@@ -40,6 +40,14 @@ const RegistrationModule = sequelize.define  (
             type: DataTypes.TINYINT,
             defaultValue: 0
         },
+        work_session_completed: {
+            type: DataTypes.TINYINT,
+            defaultValue: 0
+        },
+        module_exam_completed: {
+            type: DataTypes.TINYINT,
+            defaultValue: 0
+        },
         registration_id: {
             type: DataTypes.INTEGER,
             allowNull: false
