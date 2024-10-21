@@ -723,8 +723,7 @@ const getWorkSessionStatistics = (req, res) => {
                                         status: "ok",
                                         code: 200,
                                         message: "Work Session statistic and module score generated and saved sucessfully",
-                                        statistics: statistics,
-                                        newModuleStatus: newModuleStatus
+                                        statistics: statistics
                                     })
 
                                     console.log("END");
