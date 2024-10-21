@@ -52,11 +52,13 @@ const RegistrationModule = sequelize.define  (
     }
 );
 
-/*FundaeCourse.associate = models => {
+/*
+FundaeCourse.associate = models => {
     Course.hasMany(models.Registration, {
         foreignKey: 'course_id',
         targetKey: 'id'
     });
-}*/
+}
+*/
 
 module.exports = RegistrationModule;

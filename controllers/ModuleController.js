@@ -697,8 +697,11 @@ const getWorkSessionStatistics = (req, res) => {
 
                             const passedWorkSession = (activitiesCorrectNumber >= (workSessionNumActivities * (threshold / 100))) ? 1 : 0;
 
-                            // Update module score
-                            const updatedRegistrationModule = (workSessionType == 0) ? updateRegistrationModuleScoreAndSetCompeted(workSessionId, activitiesCorrectNumber) : updateRegistrationExamModuleScore(workSessionId, activitiesCorrectNumber);
+                            // Update module
+
+                            let newModuleStatus = (workSessionType == 0) ? ((registrationModule[0].module_exam_completed == 1) ? 3 : 2) : ((registrationModule[0].work_session_completed == 1) ? 3 : 2);
+
+                            const updatedRegistrationModule = (workSessionType == 0) ? updateRegistrationModuleScoreAndSetCompleted(workSessionId, activitiesCorrectNumber, newModuleStatus) : updateRegistrationExamModuleScoreAndSetCompleted(workSessionId, activitiesCorrectNumber, newModuleStatus);
                             updatedRegistrationModule
                             .then (_ => {
 
@@ -1127,7 +1130,8 @@ async function updateRegistrationModuleStatusAndScore(id, status) {
 
     const jsonData = {        
         status,
-        score: 0
+        score: 0,
+        work_session_completed: 0
     };
 
     const jsonWhere = {        
@@ -1147,7 +1151,8 @@ async function updateRegistrationModuleExamStatusAndScore(id, status) {
 
     const jsonData = {        
         status,
-        score_exam: 0
+        score_exam: 0,
+        module_exam_completed: 0
     };
 
     const jsonWhere = {        
@@ -1163,11 +1168,12 @@ async function updateRegistrationModuleExamStatusAndScore(id, status) {
     return moduleResponse;
 };
 
-async function updateRegistrationModuleScoreAndSetCompeted(id, score) {
+async function updateRegistrationModuleScoreAndSetCompleted(id, score, status) {
 
     const jsonData = {        
         score,
-        status: 3
+        status,
+        work_session_completed: 1
     };
 
     const jsonWhere = {        
@@ -1183,10 +1189,12 @@ async function updateRegistrationModuleScoreAndSetCompeted(id, score) {
     return moduleResponse;
 };
 
-async function updateRegistrationExamModuleScore(id, score_exam) {
+async function updateRegistrationExamModuleScoreAndSetCompleted(id, score_exam, status) {
 
     const jsonData = {        
-        score_exam
+        score_exam,
+        status,
+        module_exam_completed: 1
     };
 
     const jsonWhere = {        
