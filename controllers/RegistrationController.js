@@ -505,7 +505,7 @@ async function getRegistrationModules(registration_id) {
 async function getRegistrationModule(id) {
 
     const registrationModule = await RegistrationModule.findAll({
-        attributes: ['id','name','description','threshold','order','status','score'],
+        attributes: ['id','name','description','threshold','threshold_exam','order','status','score','score_exam'],
         where: {
             id
         }
